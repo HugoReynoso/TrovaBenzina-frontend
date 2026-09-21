@@ -1,0 +1,17 @@
+<svg width="760" height="220" viewBox="0 0 760 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">TrovaBenzina logo</title>
+  <desc id="desc">TrovaBenzina wordmark with a petrol teal fuel location mark.</desc>
+  <g transform="translate(16 12) scale(.76)">
+    <path d="M128 12C79.4 12 40 51.4 40 100C40 169.2 128 244 128 244C128 244 216 169.2 216 100C216 51.4 176.6 12 128 12Z" fill="#165A67"/>
+    <path d="M128 34C93.8 64.8 76 94.8 76 124.3C76 159.4 99.5 183 128 183C156.5 183 180 159.4 180 124.3C180 94.8 162.2 64.8 128 34Z" fill="#FBFAF6"/>
+    <path d="M128 61C106.3 83.5 95.2 104.6 95.2 125.3C95.2 148.8 109.9 164.8 128 164.8C146.1 164.8 160.8 148.8 160.8 125.3C160.8 104.6 149.7 83.5 128 61Z" fill="#D49318"/>
+    <path d="M89 181.5C112.2 160.7 133.5 152.5 154.6 156.7C177 161.2 194.1 179.6 207.5 208.8C191.2 232.2 172.1 251.9 128 244C128 244 104.3 223.8 83 194.8C84.7 190 86.7 185.6 89 181.5Z" fill="#17211C"/>
+    <path d="M96.4 184.8C119 166 138.8 160.3 157.7 166.3C171.5 170.7 183.2 181.2 193.6 198.6" stroke="#FBFAF6" stroke-width="12" stroke-linecap="round"/>
+    <path d="M126.7 180.8L119.2 200.2" stroke="#FBFAF6" stroke-width="10" stroke-linecap="round"/>
+    <path d="M153.8 176.8L147.5 193.1" stroke="#FBFAF6" stroke-width="9" stroke-linecap="round"/>
+    <path d="M113.8 105.2C109.1 114.2 106.8 122.7 106.8 130.8" stroke="#FBFAF6" stroke-width="11" stroke-linecap="round"/>
+  </g>
+  <text x="230" y="112" fill="#17211C" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="900" letter-spacing="0">Trova</text>
+  <text x="395" y="112" fill="#165A67" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="900" letter-spacing="0">Benzina</text>
+  <text x="233" y="154" fill="#5B6660" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="0">Trova il pieno che fa meno male.</text>
+</svg>
