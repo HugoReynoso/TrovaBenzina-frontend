@@ -11,14 +11,14 @@ export function Footer() {
           </p>
           <p className="mt-2">Mappe e dati cartografici: OpenStreetMap contributors.</p>
         </div>
-        <nav aria-label="Link footer" className="flex flex-wrap gap-3 md:justify-end">
+        <nav aria-label="Link footer" className="flex flex-wrap items-center gap-x-4 gap-y-2 md:justify-end">
           <a
-            className="text-xs font-bold text-ink/58 hover:text-petrol hover:underline"
+            className="text-sm font-bold text-ink/62 hover:text-petrol hover:underline"
             href="https://hugoreynoso.github.io/"
             target="_blank"
             rel="noreferrer"
           >
-            HugoReynoso
+            Reynoso
           </a>
           <Link className="hover:text-petrol hover:underline" href="/privacy">
             Privacy
