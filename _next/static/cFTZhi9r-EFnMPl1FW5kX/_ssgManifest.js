@@ -1,0 +1,1 @@
+self.__SSG_MANIFEST=new Set(["\u002Fnotizie\u002F[slug]","\u002Fprezzo-benzina\u002F[city]","\u002Fprezzo-diesel\u002F[city]","\u002Fprezzo-gpl\u002F[city]","\u002Fstorico-prezzo-benzina\u002F[city]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()
