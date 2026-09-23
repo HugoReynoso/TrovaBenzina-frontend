@@ -34,10 +34,21 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Validate API base URL
+        run: |
+          if [ -z "$NEXT_PUBLIC_API_BASE_URL" ]; then
+            echo "NEXT_PUBLIC_API_BASE_URL is required for the static GitHub Pages build."
+            echo "Set it in GitHub repository Variables to the public Spring Boot backend URL."
+            exit 1
+          fi
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+
       - name: Build static site
         run: npm run build
         env:
           GITHUB_PAGES: "true"
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
 
       - name: Disable Jekyll
         run: touch out/.nojekyll

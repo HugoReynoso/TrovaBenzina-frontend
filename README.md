@@ -1,6 +1,6 @@
 # TrovaBenzina Frontend
 
-Frontend Next.js per TrovaBenzina, sito italiano per confrontare prezzi carburanti, trovare distributori economici su mappa e preparare pagine SEO indicizzabili per citta e carburante.
+Frontend Next.js di TrovaBenzina: mappa prezzi carburanti, confronto distributori, statistiche, storico prezzi, segnalazioni utente e area admin collegata al backend Spring Boot.
 
 ## Demo
 
@@ -8,90 +8,137 @@ Demo GitHub Pages:
 
 https://hugoreynoso.github.io/TrovaBenzina-frontend/
 
+La demo statica viene pubblicata da GitHub Actions. Per funzionare fuori dal PC locale richiede una URL backend pubblica configurata nella repository variable:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=https://url-pubblica-del-backend
+```
+
+In locale il valore usato e:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+```
+
 ## Stack
 
-- Next.js con App Router
+- Next.js App Router con export statico
 - TypeScript
 - Tailwind CSS
 - Leaflet e OpenStreetMap
 - Recharts
 - Vitest
+- GitHub Actions e GitHub Pages
 
-## Avvio
+## Avvio Locale
+
+Avvia prima il backend Spring Boot su `http://localhost:8080`, poi:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Il sito parte da `http://localhost:3000`.
+Il frontend parte da:
 
-## Env
+```text
+http://localhost:3000
+```
 
-Copia `.env.example` in `.env.local` quando il backend Spring Boot sara disponibile.
+Configura `.env.local`:
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 ```
 
-Il codice non hardcoda localhost: se la variabile non e configurata o il backend non risponde, usa mock data separati in `src/mocks`.
+## Funzionalita
 
-## Struttura
+- Selezione citta, provincia e comuni principali
+- Geolocalizzazione con fallback su Milano
+- Mappa distributori con marker prezzo e brand
+- Logo IP e immagine generica per pompe bianche
+- Top 5 prezzi piu economici, ottimizzato anche per mobile
+- Grafico storico prezzi con fallback visuale quando lo storico backend e vuoto
+- Infografica accise/prezzo ingrandibile su desktop
+- Form segnalazione prezzo con ricerca citta e caricamento distributori reali
+- Admin login tramite backend, token JWT e chiamate protette
+- Loading e error state per lentezza o indisponibilita backend
+- SEO con metadata, canonical, sitemap e robots
 
-```text
-src/
-  app/                 route App Router, metadata, sitemap, robots
-  components/          componenti layout riutilizzabili
-  features/            mappa, filtri, stazioni, statistiche, news
-  lib/api/             layer API verso Spring Boot con fallback mock
-  lib/price.ts         utility prezzo, colore marker e ordinamento
-  mocks/               dati mock separati dal codice reale
-  types/               tipi TypeScript API
-  test/                setup test
-```
-
-## Route principali
+## Route Principali
 
 - `/`
-- `/prezzo-benzina/milano`
-- `/prezzo-diesel/milano`
-- `/prezzo-gpl/milano`
-- `/storico-prezzo-benzina/milano`
+- `/prezzo-benzina/[city]`
+- `/prezzo-diesel/[city]`
+- `/prezzo-gpl/[city]`
+- `/storico-prezzo-benzina/[city]`
 - `/accise-benzina`
 - `/segnala-prezzo`
-- `/admin` noindex, mock admin in attesa di autenticazione backend
+- `/admin` noindex
 - `/notizie`
 - `/notizie/[slug]`
 
-Le route citta sono predisposte anche per Roma, Torino, Napoli, Bologna e Firenze.
+## Backend API
 
-## Backend API attese
+Il frontend usa JSON camelCase dal backend Spring Boot.
+
+Endpoint pubblici:
 
 - `GET /api/regions`
-- `GET /api/provinces?regionId=1`
-- `GET /api/cities?provinceId=1`
-- `GET /api/stations?cityId=1&fuelType=BENZINA&selfService=true`
+- `GET /api/provinces`
+- `GET /api/provinces?regionId={regionId}`
+- `GET /api/cities`
+- `GET /api/cities?provinceId={provinceId}`
+- `GET /api/stations?cityId={cityId}&fuelType={fuelType}`
+- `GET /api/stations?cityId={cityId}&fuelType={fuelType}&selfService={true|false}`
 - `GET /api/stations/{id}`
-- `GET /api/stations/cheapest?cityId=1&fuelType=BENZINA&limit=10`
-- `GET /api/cities/{cityId}/fuel-statistics?fuelType=BENZINA`
-- `GET /api/cities/{cityId}/fuel-statistics/history?fuelType=BENZINA`
+- `GET /api/stations/cheapest?cityId={cityId}&fuelType={fuelType}&limit={limit}`
+- `GET /api/cities/{cityId}/fuel-statistics?fuelType={fuelType}`
+- `GET /api/cities/{cityId}/fuel-statistics/history?fuelType={fuelType}`
+- `POST /api/price-reports`
+
+Endpoint admin:
+
+- `POST /api/auth/login`
+- `GET /api/admin/price-reports`
+- `PATCH /api/admin/price-reports/{id}/approve`
+- `PATCH /api/admin/price-reports/{id}/reject`
+- `GET /api/admin/logs`
+
+Gli endpoint admin richiedono:
+
+```text
+Authorization: Bearer <token>
+```
 
 ## Comandi
 
 ```bash
-npm run lint
 npm run build
 npm run test
 ```
 
+Il progetto ha anche lo script:
+
+```bash
+npm run lint
+```
+
 ## Deploy GitHub Pages
 
-Il deploy statico avviene tramite GitHub Actions su ogni push verso `main`.
+Il deploy parte a ogni push su `main` e puo essere avviato manualmente da GitHub Actions.
 
 Workflow:
 
 ```text
 .github/workflows/deploy-pages.yml
+```
+
+Prima di pubblicare una demo funzionante, imposta in GitHub:
+
+```text
+Settings -> Secrets and variables -> Actions -> Variables
+NEXT_PUBLIC_API_BASE_URL=https://url-pubblica-del-backend
 ```
 
 La build usa:
@@ -100,13 +147,17 @@ La build usa:
 GITHUB_PAGES=true npm run build
 ```
 
-Questo abilita il `basePath` `/TrovaBenzina-frontend`, necessario per servire correttamente asset e pagine dal repository GitHub Pages.
+Questo abilita:
 
-## Note
+```text
+basePath=/TrovaBenzina-frontend
+```
 
-- I prezzi attuali sono mock realistici e chiaramente separati in `src/mocks`.
-- La mappa Leaflet e caricata solo lato client per evitare problemi SSR.
-- Le pagine includono contenuto HTML indicizzabile oltre alla mappa.
-- Il selettore lingua e predisposto con `hreflang`; la traduzione dei contenuti andra collegata alla futura strategia i18n.
-- Le segnalazioni prezzo restano in stato `pending` e sono visibili nella pagina admin mock.
-- La pagina admin e noindex e dovra essere protetta dal backend prima della produzione.
+necessario per servire correttamente asset e pagine da GitHub Pages.
+
+## Note SEO
+
+- Le pagine pubbliche espongono metadata e canonical.
+- La sitemap include homepage, pagine carburante/citta principali, storico, accise, notizie e segnalazione.
+- `/admin` e `noindex`.
+- Le pagine citta generate staticamente sono limitate alle citta SEO principali per evitare build troppo pesanti.
