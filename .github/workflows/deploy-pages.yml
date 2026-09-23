@@ -34,12 +34,13 @@ jobs:
       - name: Run tests
         run: npm run test
 
-      - name: Validate API base URL
+      - name: Show API base URL
         run: |
           if [ -z "$NEXT_PUBLIC_API_BASE_URL" ]; then
-            echo "NEXT_PUBLIC_API_BASE_URL is required for the static GitHub Pages build."
-            echo "Set it in GitHub repository Variables to the public Spring Boot backend URL."
-            exit 1
+            echo "NEXT_PUBLIC_API_BASE_URL is not set. The demo will be published with http://localhost:8080 fallback."
+            echo "Set the repository Variable NEXT_PUBLIC_API_BASE_URL to a public backend URL for a fully working demo."
+          else
+            echo "Using configured NEXT_PUBLIC_API_BASE_URL."
           fi
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
@@ -48,7 +49,7 @@ jobs:
         run: npm run build
         env:
           GITHUB_PAGES: "true"
-          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080' }}
 
       - name: Disable Jekyll
         run: touch out/.nojekyll

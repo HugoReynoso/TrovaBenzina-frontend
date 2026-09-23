@@ -8,7 +8,9 @@ Demo GitHub Pages:
 
 https://hugoreynoso.github.io/TrovaBenzina-frontend/
 
-La demo statica viene pubblicata da GitHub Actions. Per funzionare fuori dal PC locale richiede una URL backend pubblica configurata nella repository variable:
+La demo statica viene pubblicata da GitHub Actions. Se non viene configurato un backend pubblico, la build usa il fallback `http://localhost:8080`: la UI viene pubblicata, ma le chiamate live funzionano solo sul computer che ha il backend locale acceso.
+
+Per una demo pubblica pienamente funzionante, configura una URL backend pubblica nella repository variable:
 
 ```text
 NEXT_PUBLIC_API_BASE_URL=https://url-pubblica-del-backend
@@ -134,7 +136,7 @@ Workflow:
 .github/workflows/deploy-pages.yml
 ```
 
-Prima di pubblicare una demo funzionante, imposta in GitHub:
+Per una demo pubblica pienamente funzionante, imposta in GitHub:
 
 ```text
 Settings -> Secrets and variables -> Actions -> Variables
