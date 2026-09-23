@@ -35,17 +35,24 @@ jobs:
         run: npm run test
 
       - name: Configure API base URL
+        id: api_base_url
         run: |
           if [ -z "$NEXT_PUBLIC_API_BASE_URL" ]; then
             echo "NEXT_PUBLIC_API_BASE_URL is not set. The demo will be published with http://localhost:8080 fallback."
             echo "Set the repository Variable NEXT_PUBLIC_API_BASE_URL to a public backend URL for a fully working demo."
             echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8080" >> "$GITHUB_ENV"
+            echo "uses_mock_api=true" >> "$GITHUB_OUTPUT"
           else
             echo "Using configured NEXT_PUBLIC_API_BASE_URL."
             echo "NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL" >> "$GITHUB_ENV"
+            echo "uses_mock_api=false" >> "$GITHUB_OUTPUT"
           fi
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+
+      - name: Start demo API fallback
+        if: steps.api_base_url.outputs.uses_mock_api == 'true'
+        run: node scripts/pages-mock-api.cjs &
 
       - name: Build static site
         run: npm run build
