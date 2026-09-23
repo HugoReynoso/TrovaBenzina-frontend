@@ -1,13 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, ShieldCheck, X } from "lucide-react";
+import { approvePriceReport, rejectPriceReport } from "@/lib/api/reports";
 import { formatEuro } from "@/lib/price";
 import type { AdminLogEntry, PriceReport, PriceReportStatus } from "@/types/report";
 
 interface AdminDashboardProps {
   initialReports: PriceReport[];
   logs: AdminLogEntry[];
+  token: string;
+  loading: boolean;
+  onReportsChange: (reports: PriceReport[]) => void;
+  onLogout: () => void;
 }
 
 const statusLabels: Record<PriceReportStatus, string> = {
@@ -22,12 +27,30 @@ const levelClass: Record<AdminLogEntry["level"], string> = {
   error: "bg-tomato/10 text-tomato"
 };
 
-export function AdminDashboard({ initialReports, logs }: AdminDashboardProps) {
+export function AdminDashboard({ initialReports, logs, token, loading, onReportsChange, onLogout }: AdminDashboardProps) {
   const [reports, setReports] = useState(initialReports);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [error, setError] = useState("");
   const pendingCount = useMemo(() => reports.filter((report) => report.status === "pending").length, [reports]);
 
-  function updateStatus(id: number, status: PriceReportStatus) {
-    setReports((current) => current.map((report) => (report.id === id ? { ...report, status } : report)));
+  useEffect(() => {
+    setReports(initialReports);
+  }, [initialReports]);
+
+  async function updateStatus(id: number, status: PriceReportStatus) {
+    setUpdatingId(id);
+    setError("");
+
+    try {
+      const updatedReport = status === "approved" ? await approvePriceReport(id, token) : await rejectPriceReport(id, token);
+      const nextReports = reports.map((report) => (report.id === id ? updatedReport : report));
+      setReports(nextReports);
+      onReportsChange(nextReports);
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Aggiornamento segnalazione non riuscito.");
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   return (
@@ -37,15 +60,22 @@ export function AdminDashboard({ initialReports, logs }: AdminDashboardProps) {
           <div>
             <p className="flex items-center gap-2 text-sm font-black text-petrol">
               <ShieldCheck size={18} aria-hidden="true" />
-              Area admin mock
+              Area admin
             </p>
             <h1 className="mt-1 text-2xl font-black text-ink md:text-4xl">Approvazione segnalazioni</h1>
           </div>
-          <span className="rounded-md bg-amber/15 px-3 py-2 text-sm font-black text-amber">{pendingCount} in attesa</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-md bg-amber/15 px-3 py-2 text-sm font-black text-amber">{pendingCount} in attesa</span>
+            <button className="rounded-md border border-ink/10 bg-white px-3 py-2 text-sm font-black text-ink/70" type="button" onClick={onLogout}>
+              Esci
+            </button>
+          </div>
         </div>
         <p className="mt-3 max-w-3xl text-ink/68">
-          Questa schermata prepara il flusso reale: le segnalazioni degli utenti non pubblicano prezzi finche non vengono approvate.
+          Le segnalazioni degli utenti non pubblicano prezzi finche non vengono approvate.
         </p>
+        {loading ? <p className="mt-3 rounded-md bg-ink/[0.035] p-3 text-sm font-bold text-ink/64">Caricamento dati admin...</p> : null}
+        {error ? <p className="mt-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
       </section>
 
       <section className="overflow-hidden rounded-md border border-ink/10 bg-white shadow-sm" aria-labelledby="admin-reports">
@@ -55,7 +85,7 @@ export function AdminDashboard({ initialReports, logs }: AdminDashboardProps) {
           </h2>
         </div>
         <div className="grid divide-y divide-ink/10">
-          {reports.map((report) => (
+          {reports.length > 0 ? reports.map((report) => (
             <article key={report.id} className="grid gap-3 p-4 md:grid-cols-[1fr_auto] md:items-center">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -76,7 +106,7 @@ export function AdminDashboard({ initialReports, logs }: AdminDashboardProps) {
                 <button
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-mint px-3 text-sm font-black text-white disabled:opacity-45"
                   type="button"
-                  disabled={report.status === "approved"}
+                  disabled={report.status === "approved" || updatingId === report.id}
                   onClick={() => updateStatus(report.id, "approved")}
                 >
                   <Check size={16} aria-hidden="true" />
@@ -85,7 +115,7 @@ export function AdminDashboard({ initialReports, logs }: AdminDashboardProps) {
                 <button
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-tomato px-3 text-sm font-black text-white disabled:opacity-45"
                   type="button"
-                  disabled={report.status === "rejected"}
+                  disabled={report.status === "rejected" || updatingId === report.id}
                   onClick={() => updateStatus(report.id, "rejected")}
                 >
                   <X size={16} aria-hidden="true" />
@@ -93,7 +123,9 @@ export function AdminDashboard({ initialReports, logs }: AdminDashboardProps) {
                 </button>
               </div>
             </article>
-          ))}
+          )) : (
+            <p className="p-4 text-sm font-bold text-ink/60">Nessuna segnalazione prezzo trovata.</p>
+          )}
         </div>
       </section>
 
@@ -102,7 +134,7 @@ export function AdminDashboard({ initialReports, logs }: AdminDashboardProps) {
           Log e bug
         </h2>
         <div className="mt-4 grid gap-3">
-          {logs.map((log) => (
+          {logs.length > 0 ? logs.map((log) => (
             <article key={log.id} className="rounded-md bg-ink/[0.035] p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`rounded-md px-2 py-1 text-xs font-black ${levelClass[log.level]}`}>{log.level.toUpperCase()}</span>
@@ -113,7 +145,9 @@ export function AdminDashboard({ initialReports, logs }: AdminDashboardProps) {
                 {new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(new Date(log.createdAt))}
               </p>
             </article>
-          ))}
+          )) : (
+            <p className="rounded-md bg-ink/[0.035] p-3 text-sm font-bold text-ink/60">Nessun log disponibile.</p>
+          )}
         </div>
       </section>
     </div>

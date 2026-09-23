@@ -17,7 +17,7 @@ export function CitySummary({ city, statistic }: CitySummaryProps) {
         {statistic.stationCount} distributori nel dataset corrente.
       </p>
       <p className="mt-2 text-sm">
-        I dati sono mock separati in attesa del backend Spring Boot e verranno sostituiti dagli endpoint MIMIT del progetto.
+        I dati arrivano dal backend TrovaBenzina e vengono aggiornati dagli endpoint carburante del progetto.
       </p>
     </section>
   );

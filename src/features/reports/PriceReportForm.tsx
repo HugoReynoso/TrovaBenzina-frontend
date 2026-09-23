@@ -1,17 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CheckCircle2, Send } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Search, Send } from "lucide-react";
 import { createPriceReport } from "@/lib/api/reports";
+import { getStations } from "@/lib/api/stations";
 import type { FuelTypeCode } from "@/types/fuel";
 import { FUEL_TYPES } from "@/types/fuel";
+import type { City } from "@/types/location";
 import type { Station } from "@/types/station";
 
 interface PriceReportFormProps {
+  cities: City[];
+  initialCity?: City;
   stations: Station[];
 }
 
-export function PriceReportForm({ stations }: PriceReportFormProps) {
+export function PriceReportForm({ cities, initialCity, stations }: PriceReportFormProps) {
+  const [cityId, setCityId] = useState(initialCity?.id ?? cities[0]?.id ?? 0);
+  const [citySearch, setCitySearch] = useState(initialCity?.name ?? cities[0]?.name ?? "");
+  const [availableStations, setAvailableStations] = useState(stations);
   const [stationId, setStationId] = useState(stations[0]?.id ?? 0);
   const [fuelTypeCode, setFuelTypeCode] = useState<FuelTypeCode>("BENZINA");
   const [price, setPrice] = useState("");
@@ -20,11 +27,69 @@ export function PriceReportForm({ stations }: PriceReportFormProps) {
   const [reporterEmail, setReporterEmail] = useState("");
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingStations, setIsLoadingStations] = useState(false);
+  const [error, setError] = useState("");
+  const [stationError, setStationError] = useState("");
 
   const selectedStation = useMemo(
-    () => stations.find((station) => station.id === stationId) ?? stations[0],
-    [stationId, stations]
+    () => availableStations.find((station) => station.id === stationId) ?? availableStations[0],
+    [availableStations, stationId]
   );
+  const filteredCities = useMemo(() => {
+    const query = citySearch.trim().toLowerCase();
+    const matches = query.length < 2 ? cities.slice(0, 40) : cities.filter((city) => city.name.toLowerCase().includes(query));
+    const selectedCity = cities.find((city) => city.id === cityId);
+    const visibleCities = selectedCity && !matches.some((city) => city.id === selectedCity.id) ? [selectedCity, ...matches] : matches;
+
+    return visibleCities.slice(0, 80);
+  }, [cities, cityId, citySearch]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStations() {
+      if (!cityId) {
+        setAvailableStations([]);
+        setStationId(0);
+        return;
+      }
+
+      setIsLoadingStations(true);
+      setStationError("");
+
+      try {
+        const nextStations = await getStations({ cityId, fuelType: fuelTypeCode, serviceMode: "all" });
+
+        if (!cancelled) {
+          setAvailableStations(nextStations);
+          setStationId(nextStations[0]?.id ?? 0);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setAvailableStations([]);
+          setStationId(0);
+          setStationError(loadError instanceof Error ? loadError.message : "Impossibile caricare i distributori per questa citta.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingStations(false);
+        }
+      }
+    }
+
+    void loadStations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cityId, fuelTypeCode]);
+
+  function handleCitySelect(nextCityId: number) {
+    const nextCity = cities.find((city) => city.id === nextCityId);
+    setCityId(nextCityId);
+    setCitySearch(nextCity?.name ?? "");
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,22 +97,31 @@ export function PriceReportForm({ stations }: PriceReportFormProps) {
       return;
     }
 
-    await createPriceReport({
-      stationId: selectedStation.id,
-      stationName: selectedStation.name,
-      brand: selectedStation.brand,
-      cityName: selectedStation.cityName,
-      fuelTypeCode,
-      price: Number(price.replace(",", ".")),
-      selfService,
-      reporterName: reporterName || undefined,
-      reporterEmail: reporterEmail || undefined,
-      note: note || undefined
-    });
+    setIsSubmitting(true);
+    setError("");
 
-    setSubmitted(true);
-    setPrice("");
-    setNote("");
+    try {
+      await createPriceReport({
+        stationId: selectedStation.id,
+        stationName: selectedStation.name,
+        brand: selectedStation.brand,
+        cityName: selectedStation.cityName,
+        fuelTypeCode,
+        price: Number(price.replace(",", ".")),
+        selfService,
+        reporterName: reporterName || undefined,
+        reporterEmail: reporterEmail || undefined,
+        note: note || undefined
+      });
+
+      setSubmitted(true);
+      setPrice("");
+      setNote("");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Invio segnalazione non riuscito.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -71,23 +145,35 @@ export function PriceReportForm({ stations }: PriceReportFormProps) {
           </div>
         </div>
       ) : null}
+      {error ? <p className="mt-5 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
 
       <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
-        <label className="grid gap-2">
-          <span className="text-sm font-black text-ink">Distributore</span>
+        <div className="grid gap-4 rounded-md border border-ink/10 bg-paper p-3">
+          <label className="grid gap-2">
+            <span className="text-sm font-black text-ink">Citta</span>
+            <span className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" size={17} aria-hidden="true" />
+              <input
+                className="h-12 w-full rounded-md border border-ink/10 bg-white pl-10 pr-3 text-base"
+                value={citySearch}
+                onChange={(event) => setCitySearch(event.target.value)}
+                placeholder="Cerca comune, es. Milano"
+              />
+            </span>
+          </label>
           <select
             className="h-12 rounded-md border border-ink/10 bg-white px-3 text-base"
-            value={stationId}
-            onChange={(event) => setStationId(Number(event.target.value))}
+            value={cityId}
+            onChange={(event) => handleCitySelect(Number(event.target.value))}
             required
           >
-            {stations.map((station) => (
-              <option key={station.id} value={station.id}>
-                {station.brand} - {station.name}, {station.cityName}
+            {filteredCities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name} - {city.provinceName}
               </option>
             ))}
           </select>
-        </label>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-3">
           <label className="grid gap-2">
@@ -95,7 +181,14 @@ export function PriceReportForm({ stations }: PriceReportFormProps) {
             <select
               className="h-12 rounded-md border border-ink/10 bg-white px-3"
               value={fuelTypeCode}
-              onChange={(event) => setFuelTypeCode(event.target.value as FuelTypeCode)}
+              onChange={(event) => {
+                const nextFuelType = event.target.value as FuelTypeCode;
+                setFuelTypeCode(nextFuelType);
+
+                if (nextFuelType === "GPL") {
+                  setSelfService(false);
+                }
+              }}
             >
               {FUEL_TYPES.map((fuel) => (
                 <option key={fuel.code} value={fuel.code}>
@@ -140,6 +233,30 @@ export function PriceReportForm({ stations }: PriceReportFormProps) {
           </fieldset>
         </div>
 
+        <label className="grid gap-2">
+          <span className="flex items-center justify-between gap-3 text-sm font-black text-ink">
+            Distributore
+            {isLoadingStations ? <span className="font-bold text-ink/50">Carico...</span> : null}
+          </span>
+          <select
+            className="h-12 rounded-md border border-ink/10 bg-white px-3 text-base disabled:bg-ink/[0.04]"
+            value={stationId}
+            onChange={(event) => setStationId(Number(event.target.value))}
+            disabled={isLoadingStations || availableStations.length === 0}
+            required
+          >
+            {availableStations.map((station) => (
+              <option key={station.id} value={station.id}>
+                {station.brand} - {station.name}, {station.address}
+              </option>
+            ))}
+          </select>
+          {stationError ? <span className="text-sm font-bold text-tomato">{stationError}</span> : null}
+          {!isLoadingStations && availableStations.length === 0 && !stationError ? (
+            <span className="text-sm font-bold text-ink/58">Nessun distributore trovato per questa citta e carburante.</span>
+          ) : null}
+        </label>
+
         <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-2">
             <span className="text-sm font-black text-ink">Nome opzionale</span>
@@ -166,9 +283,13 @@ export function PriceReportForm({ stations }: PriceReportFormProps) {
           />
         </label>
 
-        <button className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-petrol px-5 font-black text-white md:w-fit" type="submit">
+        <button
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-petrol px-5 font-black text-white disabled:opacity-60 md:w-fit"
+          type="submit"
+          disabled={isSubmitting || !selectedStation}
+        >
           <Send size={18} aria-hidden="true" />
-          Invia per approvazione
+          {isSubmitting ? "Invio..." : "Invia per approvazione"}
         </button>
       </form>
     </section>

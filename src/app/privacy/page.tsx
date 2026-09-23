@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <main className="mx-auto grid max-w-3xl gap-5 px-4 py-8 leading-relaxed text-ink/76 md:px-6">
         <h1 className="text-3xl font-black text-ink">Privacy Policy</h1>
         <p>
-          TrovaBenzina e in fase di sviluppo. In questa V1 il sito usa dati mock e non pubblica segnalazioni inviate dagli utenti
+          TrovaBenzina e in fase di sviluppo. In questa V1 il sito usa il backend locale e non pubblica segnalazioni inviate dagli utenti
           senza approvazione admin.
         </p>
         <section className="grid gap-2">

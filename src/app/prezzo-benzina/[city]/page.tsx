@@ -3,8 +3,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HomeExperience } from "@/features/stations/HomeExperience";
 import { getCities, getCityBySlug } from "@/lib/api/cities";
-import { getPriceHistory, getCityFuelStatistics } from "@/lib/api/statistics";
-import { getStations } from "@/lib/api/stations";
+import { getFuelPageData } from "@/lib/api/fuel-page";
+import { getSeoCities } from "@/lib/seo-cities";
 
 interface PageProps {
   params: Promise<{ city: string }>;
@@ -28,18 +28,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export async function generateStaticParams() {
   const cities = await getCities();
-  return cities.map((city) => ({ city: city.slug }));
+  return getSeoCities(cities).map((city) => ({ city: city.slug }));
 }
 
 export default async function BenzinaCityPage({ params }: PageProps) {
   const { city: citySlug } = await params;
   const cities = await getCities();
   const city = (await getCityBySlug(citySlug)) ?? cities[0];
-  const [stations, statistic, history] = await Promise.all([
-    getStations({ cityId: city.id, fuelType: "BENZINA", serviceMode: "self" }),
-    getCityFuelStatistics(city.id, "BENZINA"),
-    getPriceHistory(city.id, "BENZINA")
-  ]);
+  const { stations, statistic, history } = await getFuelPageData(city, "BENZINA", { serviceMode: "self" });
 
   return (
     <>

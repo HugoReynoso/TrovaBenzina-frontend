@@ -1,0 +1,7 @@
+<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pompa generica">
+  <rect x="19" y="10" width="26" height="48" rx="5" fill="#F8FAF9" stroke="#17211C" stroke-opacity="0.35" stroke-width="3"/>
+  <rect x="24" y="16" width="16" height="15" rx="2" fill="#DDE7E2"/>
+  <path d="M45 22H51C54.3137 22 57 24.6863 57 28V47C57 50.3137 54.3137 53 51 53H47" stroke="#17211C" stroke-opacity="0.45" stroke-width="4" stroke-linecap="round"/>
+  <path d="M51 22V15L57 20" stroke="#17211C" stroke-opacity="0.45" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="15" y="58" width="34" height="5" rx="2.5" fill="#17211C" fill-opacity="0.45"/>
+</svg>

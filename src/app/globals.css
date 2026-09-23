@@ -64,25 +64,25 @@ select {
 }
 
 .price-marker__card {
-  border: 2px solid rgb(23 33 28 / 0.18);
-  border-radius: 8px;
-  box-shadow: 0 10px 24px rgb(23 33 28 / 0.2);
+  border: 1px solid rgb(23 33 28 / 0.16);
+  border-radius: 7px;
+  box-shadow: 0 8px 18px rgb(23 33 28 / 0.16);
   color: #17211c;
   display: grid;
-  gap: 1px;
+  gap: 0;
   justify-items: center;
-  min-width: 74px;
-  padding: 5px 7px 7px;
+  min-width: 54px;
+  padding: 3px 5px 5px;
   position: relative;
 }
 
 .price-marker__card::after {
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 10px solid currentColor;
-  bottom: -10px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid currentColor;
+  bottom: -7px;
   content: "";
-  left: calc(50% - 8px);
+  left: calc(50% - 6px);
   opacity: 0.88;
   position: absolute;
 }
@@ -95,9 +95,9 @@ select {
 }
 
 .price-marker__price {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 900;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .marker-cheap {
@@ -113,4 +113,107 @@ select {
 .marker-high {
   background: #ffe0dd;
   color: #a22b27;
+}
+
+.brand-logo {
+  align-items: center;
+  background: #17211c;
+  border: 1px solid rgb(23 33 28 / 0.14);
+  border-radius: 8px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 900;
+  height: 38px;
+  justify-content: center;
+  letter-spacing: 0;
+  line-height: 1;
+  min-width: 44px;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.brand-logo__image {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  width: auto;
+}
+
+.brand-logo--compact {
+  height: 32px;
+  min-width: 38px;
+}
+
+.brand-logo--marker {
+  height: 16px;
+  min-width: 28px;
+  padding: 0 4px;
+}
+
+.brand-logo--eni {
+  background: #ffd200;
+  color: #17211c;
+}
+
+.brand-logo--q8 {
+  background: #0056a4;
+}
+
+.brand-logo--ip {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #ffd200;
+  padding: 0;
+}
+
+.brand-logo--ip.brand-logo--compact {
+  min-width: 32px;
+}
+
+.brand-logo--ip.brand-logo--marker {
+  min-width: 24px;
+}
+
+.brand-logo--esso {
+  background: #f7f7f7;
+  color: #d71920;
+}
+
+.brand-logo--tamoil {
+  background: #006b54;
+}
+
+.brand-logo--keropetrol {
+  background: #7b2334;
+}
+
+.brand-logo--vega {
+  background: #23632f;
+}
+
+.brand-logo--white {
+  background: #f8faf9;
+  color: #17211c;
+}
+
+.route-loading-bar {
+  animation: route-loading 900ms ease-in-out infinite;
+  transform-origin: left center;
+}
+
+@keyframes route-loading {
+  0% {
+    transform: translateX(-100%) scaleX(0.6);
+  }
+
+  45% {
+    transform: translateX(70%) scaleX(1);
+  }
+
+  100% {
+    transform: translateX(210%) scaleX(0.6);
+  }
 }

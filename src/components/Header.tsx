@@ -1,6 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { withBasePath } from "@/lib/site";
 import { LanguageSelector } from "./LanguageSelector";
 
@@ -13,10 +16,12 @@ const navItems = [
 ];
 
 export function Header() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/92 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6">
-        <Link href="/" className="flex items-center gap-2 font-black tracking-normal text-ink" aria-label="TrovaBenzina home">
+    <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/92 backdrop-blur" suppressHydrationWarning>
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6" suppressHydrationWarning>
+        <Link href="/" className="flex items-center gap-2 font-black tracking-normal text-ink" aria-label="TrovaBenzina home" onClick={() => setMenuOpen(false)}>
           <Image src={withBasePath("/brand/trovabenzina-mark.svg")} alt="" width={40} height={40} priority />
           <span className="leading-none">TrovaBenzina</span>
         </Link>
@@ -31,13 +36,35 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" suppressHydrationWarning>
           <LanguageSelector />
-          <button className="grid size-10 place-items-center rounded-md border border-ink/10 bg-white md:hidden" aria-label="Apri menu">
-            <Menu size={20} aria-hidden="true" />
+          <button
+            className="grid size-10 place-items-center rounded-md border border-ink/10 bg-white md:hidden"
+            aria-label={menuOpen ? "Chiudi menu" : "Apri menu"}
+            aria-expanded={menuOpen}
+            type="button"
+            onClick={() => setMenuOpen((isOpen) => !isOpen)}
+          >
+            {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
           </button>
         </div>
       </div>
+      {menuOpen ? (
+        <nav className="border-t border-ink/10 bg-white px-4 py-3 shadow-sm md:hidden" aria-label="Navigazione mobile">
+          <div className="mx-auto grid max-w-7xl gap-2">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                className="rounded-md px-3 py-3 text-base font-black text-ink transition hover:bg-ink/5"
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      ) : null}
     </header>
   );
 }

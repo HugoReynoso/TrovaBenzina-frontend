@@ -3,40 +3,80 @@
 import { useEffect, useState } from "react";
 import { LockKeyhole } from "lucide-react";
 import { AdminDashboard } from "./AdminDashboard";
+import { loginAdmin } from "@/lib/api/auth";
+import { getAdminLogs, getPriceReports } from "@/lib/api/reports";
 import type { AdminLogEntry, PriceReport } from "@/types/report";
 
-interface AdminLoginGateProps {
-  reports: PriceReport[];
-  logs: AdminLogEntry[];
-}
+const TOKEN_STORAGE_KEY = "trovabenzina-admin-token";
 
-const DEMO_EMAIL = "admin@trovabenzina.it";
-const DEMO_PASSWORD = "trova-admin";
-
-export function AdminLoginGate({ reports, logs }: AdminLoginGateProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export function AdminLoginGate() {
+  const [token, setToken] = useState<string | null>(null);
+  const [reports, setReports] = useState<PriceReport[]>([]);
+  const [logs, setLogs] = useState<AdminLogEntry[]>([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setIsAuthenticated(sessionStorage.getItem("trovabenzina-admin") === "ok");
+    const savedToken = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+
+    if (savedToken) {
+      setToken(savedToken);
+      void loadAdminData(savedToken);
+    }
   }, []);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function loadAdminData(nextToken: string) {
+    setIsLoading(true);
+    setError("");
 
-    if (email.trim().toLowerCase() !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
-      setError("Credenziali non valide per questa demo.");
-      return;
+    try {
+      const [nextReports, nextLogs] = await Promise.all([getPriceReports(nextToken), getAdminLogs(nextToken)]);
+      setReports(nextReports);
+      setLogs(nextLogs);
+    } catch (loadError) {
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      setToken(null);
+      setError(loadError instanceof Error ? loadError.message : "Impossibile caricare i dati admin.");
+    } finally {
+      setIsLoading(false);
     }
-
-    sessionStorage.setItem("trovabenzina-admin", "ok");
-    setIsAuthenticated(true);
   }
 
-  if (isAuthenticated) {
-    return <AdminDashboard initialReports={reports} logs={logs} />;
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const nextToken = await loginAdmin(email.trim().toLowerCase(), password);
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
+      setToken(nextToken);
+      await loadAdminData(nextToken);
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Credenziali non valide.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (token) {
+    return (
+      <AdminDashboard
+        initialReports={reports}
+        logs={logs}
+        token={token}
+        loading={isLoading}
+        onReportsChange={setReports}
+        onLogout={() => {
+          sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+          setToken(null);
+          setReports([]);
+          setLogs([]);
+        }}
+      />
+    );
   }
 
   return (
@@ -75,13 +115,13 @@ export function AdminLoginGate({ reports, logs }: AdminLoginGateProps) {
           />
         </label>
         {error ? <p className="rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
-        <button className="h-12 rounded-md bg-petrol px-5 font-black text-white" type="submit">
-          Entra
+        <button className="h-12 rounded-md bg-petrol px-5 font-black text-white disabled:opacity-60" type="submit" disabled={isLoading}>
+          {isLoading ? "Accesso..." : "Entra"}
         </button>
       </form>
 
       <p className="mt-5 rounded-md bg-ink/[0.035] p-3 text-xs text-ink/62">
-        Demo V1: {DEMO_EMAIL} / {DEMO_PASSWORD}. In produzione servira autenticazione backend, sessioni sicure e ruoli.
+        Credenziali locali: admin@trovabenzina.it / trova-admin. La sessione usa il token JWT restituito dal backend.
       </p>
     </section>
   );

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RouteLoadingIndicator } from "@/components/RouteLoadingIndicator";
 import { alternateLanguages } from "@/lib/i18n";
 import "./globals.css";
 
@@ -41,8 +42,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   };
 
   return (
-    <html lang="it">
-      <body>
+    <html lang="it" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <RouteLoadingIndicator />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         {children}
       </body>

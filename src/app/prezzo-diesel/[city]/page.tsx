@@ -6,9 +6,8 @@ import { PriceHistoryChart } from "@/features/statistics/PriceHistoryChart";
 import { StatsCards } from "@/features/statistics/StatsCards";
 import { CheapestStations } from "@/features/stations/CheapestStations";
 import { getCities, getCityBySlug } from "@/lib/api/cities";
-import { getPriceHistory, getCityFuelStatistics } from "@/lib/api/statistics";
-import { getStations } from "@/lib/api/stations";
-import { sortStationsByPrice } from "@/lib/price";
+import { getFuelPageData } from "@/lib/api/fuel-page";
+import { getSeoCities } from "@/lib/seo-cities";
 
 interface PageProps {
   params: Promise<{ city: string }>;
@@ -26,18 +25,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export async function generateStaticParams() {
   const cities = await getCities();
-  return cities.map((city) => ({ city: city.slug }));
+  return getSeoCities(cities).map((city) => ({ city: city.slug }));
 }
 
 export default async function DieselCityPage({ params }: PageProps) {
   const { city: citySlug } = await params;
   const cities = await getCities();
   const city = (await getCityBySlug(citySlug)) ?? cities[0];
-  const [stations, statistic, history] = await Promise.all([
-    getStations({ cityId: city.id, fuelType: "DIESEL", serviceMode: "self" }),
-    getCityFuelStatistics(city.id, "DIESEL"),
-    getPriceHistory(city.id, "DIESEL")
-  ]);
+  const { stations, statistic, history } = await getFuelPageData(city, "DIESEL", { serviceMode: "self", useCheapest: true, limit: 10 });
 
   return (
     <>
@@ -45,9 +40,9 @@ export default async function DieselCityPage({ params }: PageProps) {
       <main className="mx-auto grid max-w-7xl gap-5 px-4 py-6 md:px-6">
         <h1 className="text-3xl font-black text-ink">Prezzo diesel a {city.name} oggi</h1>
         <StatsCards statistic={statistic} />
-        <CheapestStations stations={sortStationsByPrice(stations, "DIESEL", "self").slice(0, 10)} fuelType="DIESEL" serviceMode="self" />
+        <CheapestStations stations={stations} fuelType="DIESEL" serviceMode="self" cityName={city.name} />
         <CitySummary city={city} statistic={statistic} />
-        <PriceHistoryChart points={history} />
+        <PriceHistoryChart points={history} fallbackStatistic={statistic} />
       </main>
       <Footer />
     </>

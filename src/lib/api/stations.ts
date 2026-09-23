@@ -1,5 +1,3 @@
-import { mockStations } from "@/mocks/stations";
-import { getStationPrice, sortStationsByPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { Station } from "@/types/station";
 import { apiGet } from "./client";
@@ -20,20 +18,7 @@ function serviceModeToParam(serviceMode?: ServiceMode): string {
 }
 
 export async function getStations(query: StationQuery): Promise<Station[]> {
-  try {
-    return await apiGet<Station[]>(
-      `/api/stations?cityId=${query.cityId}&fuelType=${query.fuelType}${serviceModeToParam(query.serviceMode)}`
-    );
-  } catch {
-    return mockStations.filter((station) => {
-      if (station.cityId !== query.cityId) {
-        return false;
-      }
-
-      const price = getStationPrice(station, query.fuelType, query.serviceMode ?? "all");
-      return Boolean(price);
-    });
-  }
+  return apiGet<Station[]>(`/api/stations?cityId=${query.cityId}&fuelType=${query.fuelType}${serviceModeToParam(query.serviceMode)}`);
 }
 
 export async function getCheapestStations(
@@ -42,20 +27,9 @@ export async function getCheapestStations(
   limit = 10,
   serviceMode: ServiceMode = "self"
 ): Promise<Station[]> {
-  try {
-    return await apiGet<Station[]>(
-      `/api/stations/cheapest?cityId=${cityId}&fuelType=${fuelType}&limit=${limit}${serviceModeToParam(serviceMode)}`
-    );
-  } catch {
-    const stations = mockStations.filter((station) => station.cityId === cityId);
-    return sortStationsByPrice(stations, fuelType, serviceMode).slice(0, limit);
-  }
+  return apiGet<Station[]>(`/api/stations/cheapest?cityId=${cityId}&fuelType=${fuelType}&limit=${limit}${serviceModeToParam(serviceMode)}`);
 }
 
 export async function getStation(id: number): Promise<Station | undefined> {
-  try {
-    return await apiGet<Station>(`/api/stations/${id}`);
-  } catch {
-    return mockStations.find((station) => station.id === id);
-  }
+  return apiGet<Station>(`/api/stations/${id}`);
 }

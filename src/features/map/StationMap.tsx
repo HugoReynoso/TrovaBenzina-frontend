@@ -3,9 +3,12 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect, useState } from "react";
-import { LocateFixed } from "lucide-react";
+import { LocateFixed, Navigation } from "lucide-react";
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { BrandLogo } from "@/components/BrandLogo";
+import { escapeHtml, getFuelBrand } from "@/lib/brand";
 import { formatEuro, getPriceTone, getStationPrice } from "@/lib/price";
+import { withBasePath } from "@/lib/site";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City } from "@/types/location";
 import type { Station } from "@/types/station";
@@ -20,12 +23,17 @@ interface StationMapProps {
 
 function markerIcon(brand: string, price: number, averagePrice: number) {
   const tone = getPriceTone(price, averagePrice);
+  const fuelBrand = getFuelBrand(brand);
+  const brandContent = fuelBrand.image
+    ? `<img class="brand-logo__image" src="${withBasePath(fuelBrand.image)}" alt="" aria-hidden="true" />`
+    : escapeHtml(fuelBrand.initials);
+
   return L.divIcon({
     className: "price-marker",
-    html: `<div class="price-marker__card marker-${tone}"><span class="price-marker__brand">${brand}</span><span class="price-marker__price">${price.toFixed(3)} EUR</span></div>`,
-    iconSize: [82, 48],
-    iconAnchor: [41, 48],
-    popupAnchor: [0, -44]
+    html: `<div class="price-marker__card marker-${tone}"><span class="brand-logo brand-logo--${fuelBrand.key} brand-logo--marker">${brandContent}</span><span class="price-marker__price">${price.toFixed(3)}</span></div>`,
+    iconSize: [58, 42],
+    iconAnchor: [29, 42],
+    popupAnchor: [0, -38]
   });
 }
 
@@ -66,7 +74,7 @@ function LocationControl() {
   }
 
   useEffect(() => {
-    requestPosition(true);
+    requestPosition(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -97,6 +105,16 @@ function LocationControl() {
   );
 }
 
+function CityMapController({ city }: { city: City }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView([city.latitude, city.longitude], 12, { animate: true });
+  }, [city.id, city.latitude, city.longitude, map]);
+
+  return null;
+}
+
 export function StationMap({ city, stations, fuelType, serviceMode, averagePrice }: StationMapProps) {
   return (
     <div className="h-[58vh] min-h-[390px] overflow-hidden rounded-md border border-ink/10 shadow-soft sm:h-[62vh] md:h-[680px]">
@@ -105,6 +123,7 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <CityMapController city={city} />
         <LocationControl />
         {stations.map((station) => {
           const price = getStationPrice(station, fuelType, serviceMode);
@@ -120,7 +139,10 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
             >
               <Popup>
                 <article className="min-w-56">
-                  <p className="text-sm font-black text-ink">{station.brand}</p>
+                  <div className="flex items-center gap-2">
+                    <BrandLogo brand={station.brand} compact />
+                    <p className="text-sm font-black text-ink">{station.brand}</p>
+                  </div>
                   <h3 className="mt-1 text-base font-black text-ink">{station.name}</h3>
                   <p className="mt-1 text-sm text-ink/70">{station.address}</p>
                   <dl className="mt-3 grid gap-2 text-sm">
@@ -137,12 +159,13 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
                     Aggiornato: {new Intl.DateTimeFormat("it-IT").format(new Date(price.communicatedAt))}
                   </p>
                   <a
-                    className="mt-3 inline-flex rounded-md bg-petrol px-3 py-2 text-sm font-black text-white"
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-amber px-3 py-2.5 text-sm font-black text-ink shadow-sm transition hover:bg-[#e0a42f]"
                     href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Naviga
+                    <Navigation size={16} aria-hidden="true" />
+                    Apri percorso
                   </a>
                 </article>
               </Popup>
