@@ -31,6 +31,13 @@ interface HomeExperienceProps {
   history: PriceHistoryPoint[];
 }
 
+interface LoadedCityData {
+  stations: Station[];
+  cheapest: Station[];
+  statistic: CityFuelStatistic;
+  history: PriceHistoryPoint[];
+}
+
 function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }): number {
   const earthRadiusKm = 6371;
   const degreesToRadians = Math.PI / 180;
@@ -51,21 +58,29 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
   const [citySlug, setCitySlug] = useState(initialCity.slug);
   const [mobileRankingOpen, setMobileRankingOpen] = useState(true);
   const [visibleStations, setVisibleStations] = useState(stations);
-  const [cheapest, setCheapest] = useState(stations.slice(0, 5));
+  const [cheapest, setCheapest] = useState(() => sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5));
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
   const [currentHistory, setCurrentHistory] = useState(history);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const userSelectedCityRef = useRef(false);
+  const dataCacheRef = useRef(new Map<string, LoadedCityData>());
+  const loadedKeyRef = useRef(`${initialCity.id}:BENZINA:self`);
 
   const selectedCity = useMemo(
     () => cities.find((city) => city.slug === citySlug) ?? initialCity,
     [cities, citySlug, initialCity]
   );
-  const areaCities = useMemo(
-    () => cities.filter((city) => city.provinceId === selectedCity.provinceId),
-    [cities, selectedCity.provinceId]
-  );
+  const selectedCityId = selectedCity.id;
+
+  useEffect(() => {
+    dataCacheRef.current.set(`${initialCity.id}:BENZINA:self`, {
+      stations,
+      cheapest: sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5),
+      statistic,
+      history
+    });
+  }, [history, initialCity.id, statistic, stations]);
 
   function handleFuelChange(nextFuelType: FuelTypeCode) {
     setFuelType(nextFuelType);
@@ -113,49 +128,68 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
   }, [cities, initialCity.slug]);
 
   useEffect(() => {
-    let cancelled = false;
+    const requestKey = `${selectedCityId}:${fuelType}:${serviceMode}`;
+
+    if (requestKey === loadedKeyRef.current) {
+      return;
+    }
+
+    const cachedData = dataCacheRef.current.get(requestKey);
+    if (cachedData) {
+      setVisibleStations(cachedData.stations);
+      setCheapest(cachedData.cheapest);
+      setCurrentStatistic(cachedData.statistic);
+      setCurrentHistory(cachedData.history);
+      setError("");
+      loadedKeyRef.current = requestKey;
+      return;
+    }
+
+    const abortController = new AbortController();
 
     async function loadCityData() {
       setIsLoading(true);
       setError("");
 
       try {
-        const cityIds = areaCities.map((city) => city.id);
         const [stationsResult, cheapestResult, statisticResult, historyResult] = await Promise.allSettled([
-          Promise.all(cityIds.map((cityId) => getStations({ cityId, fuelType, serviceMode }))).then((items) => items.flat()),
-          areaCities.length > 1
-            ? Promise.all(cityIds.map((cityId) => getCheapestStations(cityId, fuelType, 5, serviceMode))).then((items) =>
-                sortStationsByPrice(items.flat(), fuelType, serviceMode).slice(0, 5)
-              )
-            : getCheapestStations(selectedCity.id, fuelType, 5, serviceMode),
-          getCityFuelStatistics(selectedCity.id, fuelType),
-          getPriceHistory(selectedCity.id, fuelType)
+          getStations({ cityId: selectedCityId, fuelType, serviceMode }, { signal: abortController.signal }),
+          getCheapestStations(selectedCityId, fuelType, 5, serviceMode, { signal: abortController.signal }),
+          getCityFuelStatistics(selectedCityId, fuelType, { signal: abortController.signal }),
+          getPriceHistory(selectedCityId, fuelType, undefined, { signal: abortController.signal })
         ]);
 
-        if (!cancelled) {
-          const nextStations = stationsResult.status === "fulfilled" ? stationsResult.value : [];
+        if (abortController.signal.aborted) {
+          return;
+        }
 
-          setVisibleStations(nextStations);
-          setCheapest(cheapestResult.status === "fulfilled" ? cheapestResult.value : nextStations.slice(0, 5));
-          setCurrentStatistic(
-            areaCities.length === 1 && statisticResult.status === "fulfilled"
-              ? statisticResult.value
-              : buildCityFuelStatistic(selectedCity, fuelType, nextStations)
-          );
-          setCurrentHistory(historyResult.status === "fulfilled" ? historyResult.value : []);
+        const nextStations = stationsResult.status === "fulfilled" ? stationsResult.value : [];
+        const nextData = {
+          stations: nextStations,
+          cheapest:
+            cheapestResult.status === "fulfilled" ? cheapestResult.value : sortStationsByPrice(nextStations, fuelType, serviceMode).slice(0, 5),
+          statistic: statisticResult.status === "fulfilled" ? statisticResult.value : buildCityFuelStatistic(selectedCity, fuelType, nextStations),
+          history: historyResult.status === "fulfilled" ? historyResult.value : []
+        };
 
-          if (stationsResult.status === "rejected") {
-            setError(stationsResult.reason instanceof Error ? stationsResult.reason.message : "Impossibile caricare i distributori.");
-          }
+        dataCacheRef.current.set(requestKey, nextData);
+        loadedKeyRef.current = requestKey;
+        setVisibleStations(nextData.stations);
+        setCheapest(nextData.cheapest);
+        setCurrentStatistic(nextData.statistic);
+        setCurrentHistory(nextData.history);
+
+        if (stationsResult.status === "rejected") {
+          setError(stationsResult.reason instanceof Error ? stationsResult.reason.message : "Impossibile caricare i distributori.");
         }
       } catch (loadError) {
-        if (!cancelled) {
+        if (!abortController.signal.aborted) {
           setVisibleStations([]);
           setCheapest([]);
           setError(loadError instanceof Error ? loadError.message : "Impossibile caricare i dati dal backend.");
         }
       } finally {
-        if (!cancelled) {
+        if (!abortController.signal.aborted) {
           setIsLoading(false);
         }
       }
@@ -164,9 +198,9 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
     void loadCityData();
 
     return () => {
-      cancelled = true;
+      abortController.abort();
     };
-  }, [areaCities, fuelType, selectedCity, serviceMode]);
+  }, [fuelType, selectedCity, selectedCityId, serviceMode]);
 
   return (
     <>

@@ -46,7 +46,7 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
   }, [cities, cityId, citySearch]);
 
   useEffect(() => {
-    let cancelled = false;
+    const abortController = new AbortController();
 
     async function loadStations() {
       if (!cityId) {
@@ -59,20 +59,20 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
       setStationError("");
 
       try {
-        const nextStations = await getStations({ cityId, fuelType: fuelTypeCode, serviceMode: "all" });
+        const nextStations = await getStations({ cityId, fuelType: fuelTypeCode, serviceMode: "all" }, { signal: abortController.signal });
 
-        if (!cancelled) {
+        if (!abortController.signal.aborted) {
           setAvailableStations(nextStations);
           setStationId(nextStations[0]?.id ?? 0);
         }
       } catch (loadError) {
-        if (!cancelled) {
+        if (!abortController.signal.aborted) {
           setAvailableStations([]);
           setStationId(0);
           setStationError(loadError instanceof Error ? loadError.message : "Impossibile caricare i distributori per questa citta.");
         }
       } finally {
-        if (!cancelled) {
+        if (!abortController.signal.aborted) {
           setIsLoadingStations(false);
         }
       }
@@ -81,7 +81,7 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
     void loadStations();
 
     return () => {
-      cancelled = true;
+      abortController.abort();
     };
   }, [cityId, fuelTypeCode]);
 

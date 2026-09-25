@@ -17,19 +17,20 @@ function serviceModeToParam(serviceMode?: ServiceMode): string {
   return `&selfService=${serviceMode === "self"}`;
 }
 
-export async function getStations(query: StationQuery): Promise<Station[]> {
-  return apiGet<Station[]>(`/api/stations?cityId=${query.cityId}&fuelType=${query.fuelType}${serviceModeToParam(query.serviceMode)}`);
+export async function getStations(query: StationQuery, init?: RequestInit): Promise<Station[]> {
+  return apiGet<Station[]>(`/api/stations?cityId=${query.cityId}&fuelType=${query.fuelType}${serviceModeToParam(query.serviceMode)}`, init);
 }
 
 export async function getCheapestStations(
   cityId: number,
   fuelType: FuelTypeCode,
   limit = 10,
-  serviceMode: ServiceMode = "self"
+  serviceMode: ServiceMode = "self",
+  init?: RequestInit
 ): Promise<Station[]> {
-  return apiGet<Station[]>(`/api/stations/cheapest?cityId=${cityId}&fuelType=${fuelType}&limit=${limit}${serviceModeToParam(serviceMode)}`);
+  return apiGet<Station[]>(`/api/stations/cheapest?cityId=${cityId}&fuelType=${fuelType}&limit=${limit}${serviceModeToParam(serviceMode)}`, init);
 }
 
-export async function getStation(id: number): Promise<Station | undefined> {
-  return apiGet<Station>(`/api/stations/${id}`);
+export async function getStation(id: number, init?: RequestInit): Promise<Station | undefined> {
+  return apiGet<Station>(`/api/stations/${id}`, init);
 }
