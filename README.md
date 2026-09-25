@@ -6,7 +6,7 @@ Frontend Next.js di TrovaBenzina: mappa prezzi carburanti, confronto distributor
 
 Demo GitHub Pages:
 
-https://hugoreynoso.github.io/TrovaBenzina-frontend/
+https://www.trovabenzina.it
 
 La demo statica viene pubblicata da GitHub Actions. Se non viene configurato un backend pubblico, la build avvia un piccolo mock API locale solo per generare una demo navigabile con dati dimostrativi.
 
