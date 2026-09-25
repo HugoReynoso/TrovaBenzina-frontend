@@ -11,9 +11,10 @@ interface CheapestStationsProps {
   fuelType: FuelTypeCode;
   serviceMode: ServiceMode;
   cityName?: string;
+  title?: string;
 }
 
-export function CheapestStations({ stations, fuelType, serviceMode, cityName }: CheapestStationsProps) {
+export function CheapestStations({ stations, fuelType, serviceMode, cityName, title }: CheapestStationsProps) {
   if (stations.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-ink/20 bg-white p-5 text-sm text-ink/70">
@@ -26,7 +27,7 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName }: 
     <section aria-labelledby="piu-economici" className="rounded-md border border-ink/10 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h2 id="piu-economici" className="text-xl font-black text-ink">
-          Piu economici{cityName ? ` (${cityName})` : ""}
+          {title ?? `Piu economici${cityName ? ` (${cityName})` : ""}`}
         </h2>
         <span className="rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">Top {stations.length}</span>
       </div>

@@ -15,8 +15,7 @@ export default function PrivacyPage() {
       <main className="mx-auto grid max-w-3xl gap-5 px-4 py-8 leading-relaxed text-ink/76 md:px-6">
         <h1 className="text-3xl font-black text-ink">Privacy Policy</h1>
         <p>
-          TrovaBenzina e in fase di sviluppo. In questa V1 il sito usa il backend locale e non pubblica segnalazioni inviate dagli utenti
-          senza approvazione admin.
+          TrovaBenzina e in fase di sviluppo. Le segnalazioni inviate dagli utenti vengono pubblicate solo dopo approvazione.
         </p>
         <section className="grid gap-2">
           <h2 className="text-xl font-black text-ink">Dati trattati</h2>
@@ -28,7 +27,7 @@ export default function PrivacyPage() {
         <section className="grid gap-2">
           <h2 className="text-xl font-black text-ink">Geolocalizzazione</h2>
           <p>
-            La posizione viene richiesta dal browser per mostrarti sulla mappa. In questa V1 non viene salvata nel backend.
+            La posizione viene richiesta dal browser per mostrarti sulla mappa e cercare i distributori nelle vicinanze.
           </p>
         </section>
         <section className="grid gap-2">

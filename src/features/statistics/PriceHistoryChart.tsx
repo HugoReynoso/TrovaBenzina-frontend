@@ -60,7 +60,7 @@ export function PriceHistoryChart({ points, fallbackStatistic }: PriceHistoryCha
       </div>
       {isFallback ? (
         <p className="mt-3 rounded-md bg-amber/15 p-3 text-sm font-bold text-ink/70">
-          Lo storico dettagliato non e ancora disponibile dal backend: mostro il dato corrente come riferimento grafico.
+          Lo storico dettagliato e in fase di completamento: per ora mostriamo il dato corrente come riferimento grafico.
         </p>
       ) : null}
       <div className="mt-5 h-64 w-full">

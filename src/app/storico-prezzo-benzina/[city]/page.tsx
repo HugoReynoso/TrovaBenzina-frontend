@@ -41,7 +41,7 @@ export default async function HistoryPage({ params }: PageProps) {
       <main className="mx-auto grid max-w-7xl gap-5 px-4 py-6 md:px-6">
         <h1 className="text-3xl font-black text-ink">Storico prezzo benzina a {city.name}</h1>
         <p className="max-w-3xl text-ink/70">
-          Andamento del prezzo benzina calcolato dagli endpoint storici del backend TrovaBenzina.
+          Andamento del prezzo benzina calcolato da TrovaBenzina. Stiamo lavorando per rendere lo storico sempre piu completo.
         </p>
         <PriceHistoryChart points={history} fallbackStatistic={statistic} />
       </main>

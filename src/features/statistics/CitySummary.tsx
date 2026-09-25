@@ -17,7 +17,7 @@ export function CitySummary({ city, statistic }: CitySummaryProps) {
         {statistic.stationCount} distributori nel dataset corrente.
       </p>
       <p className="mt-2 text-sm">
-        I dati arrivano dal backend TrovaBenzina e vengono aggiornati dagli endpoint carburante del progetto.
+        I dati vengono aggiornati da TrovaBenzina in base alle rilevazioni disponibili.
       </p>
     </section>
   );

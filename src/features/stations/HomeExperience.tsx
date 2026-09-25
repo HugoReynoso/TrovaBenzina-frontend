@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Accordion } from "@/components/Accordion";
@@ -15,7 +15,7 @@ import { PriceHistoryChart } from "@/features/statistics/PriceHistoryChart";
 import { StatsCards } from "@/features/statistics/StatsCards";
 import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCityFuelStatistics, getPriceHistory } from "@/lib/api/statistics";
-import { getCheapestStations, getStations } from "@/lib/api/stations";
+import { getNearbyStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { sortStationsByPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -36,6 +36,11 @@ interface LoadedCityData {
   cheapest: Station[];
   statistic: CityFuelStatistic;
   history: PriceHistoryPoint[];
+}
+
+interface UserPosition {
+  latitude: number;
+  longitude: number;
 }
 
 function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }): number {
@@ -63,18 +68,23 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
   const [currentHistory, setCurrentHistory] = useState(history);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const userSelectedCityRef = useRef(false);
   const dataCacheRef = useRef(new Map<string, LoadedCityData>());
-  const loadedKeyRef = useRef(`${initialCity.id}:BENZINA:self`);
+  const loadedKeyRef = useRef(`city:${initialCity.id}:BENZINA:self`);
 
   const selectedCity = useMemo(
     () => cities.find((city) => city.slug === citySlug) ?? initialCity,
     [cities, citySlug, initialCity]
   );
   const selectedCityId = selectedCity.id;
+  const isUsingUserPosition = Boolean(userPosition) && !userSelectedCityRef.current;
+  const rankingTitle = isUsingUserPosition
+    ? "Top 5 piu economici intorno a te"
+    : `Top 5 piu economici a ${selectedCity.name} e dintorni`;
 
   useEffect(() => {
-    dataCacheRef.current.set(`${initialCity.id}:BENZINA:self`, {
+    dataCacheRef.current.set(`city:${initialCity.id}:BENZINA:self`, {
       stations,
       cheapest: sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5),
       statistic,
@@ -95,6 +105,16 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
     setCitySlug(nextSlug);
   }
 
+  const handleUserPositionChange = useCallback((nextPosition: UserPosition) => {
+    userSelectedCityRef.current = false;
+    setUserPosition(nextPosition);
+
+    const nearestCity = cities.reduce((nearest, city) =>
+      distanceKm(nextPosition, city) < distanceKm(nextPosition, nearest) ? city : nearest
+    );
+    setCitySlug(nearestCity.slug);
+  }, [cities]);
+
   useEffect(() => {
     if (!navigator.geolocation || cities.length === 0) {
       return;
@@ -110,11 +130,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         };
-        const nearestCity = cities.reduce((nearest, city) =>
-          distanceKm(currentPosition, city) < distanceKm(currentPosition, nearest) ? city : nearest
-        );
-
-        setCitySlug(nearestCity.slug);
+        handleUserPositionChange(currentPosition);
       },
       () => {
         setCitySlug(initialCity.slug);
@@ -125,10 +141,13 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
         timeout: 7000
       }
     );
-  }, [cities, initialCity.slug]);
+  }, [cities, handleUserPositionChange, initialCity.slug]);
 
   useEffect(() => {
-    const requestKey = `${selectedCityId}:${fuelType}:${serviceMode}`;
+    const shouldUseUserPosition = isUsingUserPosition;
+    const requestKey = shouldUseUserPosition
+      ? `nearby:${userPosition?.latitude.toFixed(4)}:${userPosition?.longitude.toFixed(4)}:${fuelType}:${serviceMode}`
+      : `city:${selectedCityId}:${fuelType}:${serviceMode}`;
 
     if (requestKey === loadedKeyRef.current) {
       return;
@@ -152,9 +171,29 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
       setError("");
 
       try {
-        const [stationsResult, cheapestResult, statisticResult, historyResult] = await Promise.allSettled([
-          getStations({ cityId: selectedCityId, fuelType, serviceMode }, { signal: abortController.signal }),
-          getCheapestStations(selectedCityId, fuelType, 5, serviceMode, { signal: abortController.signal }),
+        const [stationsResult, statisticResult, historyResult] = await Promise.allSettled([
+          shouldUseUserPosition && userPosition
+            ? getNearbyStations(
+                {
+                  lat: userPosition.latitude,
+                  lng: userPosition.longitude,
+                  radiusKm: 10,
+                  fuelType,
+                  serviceMode,
+                  limit: 50
+                },
+                { signal: abortController.signal }
+              )
+            : getNearbyStations(
+                {
+                  cityId: selectedCityId,
+                  radiusKm: 10,
+                  fuelType,
+                  serviceMode,
+                  limit: 50
+                },
+                { signal: abortController.signal }
+              ),
           getCityFuelStatistics(selectedCityId, fuelType, { signal: abortController.signal }),
           getPriceHistory(selectedCityId, fuelType, undefined, { signal: abortController.signal })
         ]);
@@ -166,8 +205,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
         const nextStations = stationsResult.status === "fulfilled" ? stationsResult.value : [];
         const nextData = {
           stations: nextStations,
-          cheapest:
-            cheapestResult.status === "fulfilled" ? cheapestResult.value : sortStationsByPrice(nextStations, fuelType, serviceMode).slice(0, 5),
+          cheapest: sortStationsByPrice(nextStations, fuelType, serviceMode).slice(0, 5),
           statistic: statisticResult.status === "fulfilled" ? statisticResult.value : buildCityFuelStatistic(selectedCity, fuelType, nextStations),
           history: historyResult.status === "fulfilled" ? historyResult.value : []
         };
@@ -186,7 +224,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
         if (!abortController.signal.aborted) {
           setVisibleStations([]);
           setCheapest([]);
-          setError(loadError instanceof Error ? loadError.message : "Impossibile caricare i dati dal backend.");
+          setError(loadError instanceof Error ? loadError.message : "Impossibile caricare i dati in questo momento.");
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -200,7 +238,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
     return () => {
       abortController.abort();
     };
-  }, [fuelType, selectedCity, selectedCityId, serviceMode]);
+  }, [fuelType, isUsingUserPosition, selectedCity, selectedCityId, serviceMode, userPosition]);
 
   return (
     <>
@@ -231,6 +269,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
               fuelType={fuelType}
               serviceMode={serviceMode}
               averagePrice={currentStatistic.averagePrice}
+              onUserPositionChange={handleUserPositionChange}
             />
           ) : (
             <div className="grid h-[52vh] min-h-[360px] place-items-center rounded-md border border-dashed border-ink/20 bg-white text-center shadow-sm">
@@ -253,9 +292,9 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
               <span>
                 <span id="mobile-top-5" className="inline-flex items-center gap-2 text-lg font-black text-ink">
                   <Trophy size={20} aria-hidden="true" />
-                  Top 5 piu economici
+                  {rankingTitle}
                 </span>
-                <span className="mt-1 block text-sm font-bold text-ink/62">{selectedCity.name}</span>
+                <span className="mt-1 block text-sm font-bold text-ink/62">Nel raggio vicino alla zona selezionata</span>
               </span>
               <span className="grid size-10 shrink-0 place-items-center rounded-md bg-amber text-ink">
                 {mobileRankingOpen ? <ChevronUp size={20} aria-hidden="true" /> : <ChevronDown size={20} aria-hidden="true" />}
@@ -263,7 +302,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
             </button>
             {mobileRankingOpen ? (
               <div className="mt-4 border-t border-ink/10 pt-4">
-                <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} />
+                <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} title={rankingTitle} />
               </div>
             ) : null}
           </section>
@@ -278,7 +317,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
 
         <aside className="hidden grid-cols-1 gap-4 lg:grid">
           <StatsCards statistic={currentStatistic} compact />
-          <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} />
+          <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} title={rankingTitle} />
         </aside>
       </section>
 
@@ -313,7 +352,7 @@ function DataLoadingOverlay() {
         </div>
         <div className="grid gap-3 p-5 text-center">
           <p className="text-lg font-black text-ink">Caricamento prezzi...</p>
-          <p className="text-sm font-bold text-ink/62">Sto aspettando la risposta del backend.</p>
+          <p className="text-sm font-bold text-ink/62">Sto aggiornando i prezzi della zona selezionata.</p>
           <div className="mx-auto mt-1 h-4 w-48 animate-pulse rounded-sm bg-ink/10" />
         </div>
       </div>

@@ -35,7 +35,7 @@ export const mockAdminLogs: AdminLogEntry[] = [
     id: 7101,
     level: "warning",
     area: "api",
-    message: "Fallback mock attivato: NEXT_PUBLIC_API_BASE_URL non configurato o backend non raggiungibile.",
+    message: "Modalita demo attiva: servizio dati non configurato o momentaneamente non raggiungibile.",
     createdAt: "2026-09-21T09:12:00.000Z"
   },
   {

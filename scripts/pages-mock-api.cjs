@@ -76,7 +76,10 @@ function stationFor(city, index) {
 
 function stationsFor(cityId) {
   const city = cities.find((item) => item.id === Number(cityId)) ?? cities[0];
-  return Array.from({ length: 5 }, (_, index) => stationFor(city, index));
+  return Array.from({ length: 5 }, (_, index) => ({
+    ...stationFor(city, index),
+    distanceKm: Number((0.8 + index * 1.35).toFixed(2))
+  }));
 }
 
 function statisticFor(cityId, fuelType) {
@@ -133,8 +136,8 @@ const server = http.createServer((request, response) => {
     return send(response, stations.find((station) => station.id === Number(stationMatch[1])) ?? stations[0]);
   }
 
-  if (path === "/api/stations" || path === "/api/stations/cheapest") {
-    const cityId = url.searchParams.get("cityId") ?? "1";
+  if (path === "/api/stations" || path === "/api/stations/cheapest" || path === "/api/stations/nearby") {
+    const cityId = url.searchParams.get("cityId") ?? nearestCityId(url.searchParams.get("lat"), url.searchParams.get("lng"));
     const fuelType = url.searchParams.get("fuelType") ?? "BENZINA";
     const limit = Number(url.searchParams.get("limit") ?? "10");
     const stations = stationsFor(cityId)
@@ -155,6 +158,19 @@ const server = http.createServer((request, response) => {
 
   return send(response, { message: "Not found" }, 404);
 });
+
+function nearestCityId(lat, lng) {
+  if (!lat || !lng) return "1";
+
+  const position = { latitude: Number(lat), longitude: Number(lng) };
+  const nearest = cities.reduce((best, city) => {
+    const bestDistance = Math.hypot(best.latitude - position.latitude, best.longitude - position.longitude);
+    const cityDistance = Math.hypot(city.latitude - position.latitude, city.longitude - position.longitude);
+    return cityDistance < bestDistance ? city : best;
+  }, cities[0]);
+
+  return String(nearest.id);
+}
 
 server.listen(8080, "127.0.0.1", () => {
   console.log("Demo API listening on http://127.0.0.1:8080");

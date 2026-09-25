@@ -24,8 +24,8 @@ export function FuelComposition(_props: FuelCompositionProps = {}) {
         <Image
           src={withBasePath("/brand/tax-infographic.png")}
           alt="Infografica satirica sulla composizione del prezzo benzina e sulle accise"
-          width={1680}
-          height={945}
+          width={1024}
+          height={1536}
           className="h-auto w-full"
           sizes="(min-width: 1024px) 760px, 100vw"
         />
@@ -51,8 +51,8 @@ export function FuelComposition(_props: FuelCompositionProps = {}) {
             <Image
               src={withBasePath("/brand/tax-infographic.png")}
               alt="Infografica satirica sulla composizione del prezzo benzina e sulle accise"
-              width={1680}
-              height={945}
+              width={1024}
+              height={1536}
               className="h-auto max-h-[88vh] w-full object-contain"
               sizes="90vw"
               priority

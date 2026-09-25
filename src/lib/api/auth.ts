@@ -17,7 +17,7 @@ export async function loginAdmin(email: string, password: string): Promise<strin
   const token = response.token ?? response.accessToken ?? response.jwt;
 
   if (!token) {
-    throw new Error("Il backend non ha restituito un token valido.");
+    throw new Error("Il servizio non ha restituito un token valido.");
   }
 
   return token;

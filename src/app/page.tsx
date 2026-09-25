@@ -7,7 +7,7 @@ import { getFuelPageData } from "@/lib/api/fuel-page";
 export default async function HomePage() {
   const cities = await getCities();
   const city = cities.find((item) => item.slug === "milano") ?? cities[0];
-  const { stations, statistic, history } = await getFuelPageData(city, "BENZINA", { serviceMode: "self" });
+  const { stations, statistic, history } = await getFuelPageData(city, "BENZINA", { serviceMode: "self", useNearby: true });
 
   return (
     <>

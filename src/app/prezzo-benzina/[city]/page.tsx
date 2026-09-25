@@ -35,7 +35,7 @@ export default async function BenzinaCityPage({ params }: PageProps) {
   const { city: citySlug } = await params;
   const cities = await getCities();
   const city = cities.find((item) => item.slug === citySlug) ?? cities[0];
-  const { stations, statistic, history } = await getFuelPageData(city, "BENZINA", { serviceMode: "self" });
+  const { stations, statistic, history } = await getFuelPageData(city, "BENZINA", { serviceMode: "self", useNearby: true });
 
   return (
     <>

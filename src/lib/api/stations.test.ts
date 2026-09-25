@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getCheapestStations } from "./stations";
+import { getCheapestStations, getNearbyStations } from "./stations";
 
 describe("stations API", () => {
   afterEach(() => {
@@ -38,5 +38,40 @@ describe("stations API", () => {
     );
     expect(stations).toHaveLength(1);
     expect(stations[0].name).toBe("IP Navigli");
+  });
+
+  it("requests nearby stations by coordinates", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify([
+          {
+            id: 104,
+            mimitId: "MI-000104",
+            name: "Q8 Rho",
+            brand: "Q8",
+            address: "Via Demo 1, Rho",
+            latitude: 45.532,
+            longitude: 9.04,
+            cityId: 2,
+            cityName: "Rho",
+            provinceName: "Milano",
+            regionName: "Lombardia",
+            distanceKm: 1.23,
+            prices: []
+          }
+        ]),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const stations = await getNearbyStations({ lat: 45.53, lng: 9.04, radiusKm: 10, fuelType: "BENZINA", serviceMode: "self", limit: 50 });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/api/stations/nearby?lat=45.53&lng=9.04&fuelType=BENZINA&selfService=true&radiusKm=10&limit=50",
+      expect.objectContaining({ next: { revalidate: 300 } })
+    );
+    expect(stations[0].distanceKm).toBe(1.23);
   });
 });

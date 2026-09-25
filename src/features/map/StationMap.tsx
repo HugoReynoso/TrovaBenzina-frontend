@@ -19,6 +19,7 @@ interface StationMapProps {
   fuelType: FuelTypeCode;
   serviceMode: ServiceMode;
   averagePrice: number;
+  onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
 }
 
 function markerIcon(brand: string, price: number, averagePrice: number) {
@@ -37,7 +38,7 @@ function markerIcon(brand: string, price: number, averagePrice: number) {
   });
 }
 
-function LocationControl() {
+function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (position: { latitude: number; longitude: number }) => void }) {
   const map = useMap();
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
@@ -59,6 +60,7 @@ function LocationControl() {
         setStatus("ready");
 
         if (focusMap) {
+          onUserPositionChange?.({ latitude: nextPosition.lat, longitude: nextPosition.lng });
           map.setView([nextPosition.lat, nextPosition.lng], Math.max(map.getZoom(), 14), { animate: true });
         }
       },
@@ -115,7 +117,7 @@ function CityMapController({ city }: { city: City }) {
   return null;
 }
 
-export function StationMap({ city, stations, fuelType, serviceMode, averagePrice }: StationMapProps) {
+export function StationMap({ city, stations, fuelType, serviceMode, averagePrice, onUserPositionChange }: StationMapProps) {
   return (
     <div className="h-[58vh] min-h-[390px] overflow-hidden rounded-md border border-ink/10 shadow-soft sm:h-[62vh] md:h-[680px]">
       <MapContainer center={[city.latitude, city.longitude]} zoom={12} scrollWheelZoom className="z-0 h-full">
@@ -124,7 +126,7 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <CityMapController city={city} />
-        <LocationControl />
+        <LocationControl onUserPositionChange={onUserPositionChange} />
         {stations.map((station) => {
           const price = getStationPrice(station, fuelType, serviceMode);
           if (!price) {
@@ -145,6 +147,7 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
                   </div>
                   <h3 className="mt-1 text-base font-black text-ink">{station.name}</h3>
                   <p className="mt-1 text-sm text-ink/70">{station.address}</p>
+                  {station.distanceKm ? <p className="mt-1 text-xs font-black text-petrol">{station.distanceKm.toFixed(1)} km da te</p> : null}
                   <dl className="mt-3 grid gap-2 text-sm">
                     {station.prices.map((stationPrice) => (
                       <div key={`${stationPrice.fuelTypeCode}-${stationPrice.selfService}`} className="flex justify-between gap-3">
