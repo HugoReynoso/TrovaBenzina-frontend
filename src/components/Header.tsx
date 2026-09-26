@@ -21,11 +21,14 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/92 backdrop-blur" suppressHydrationWarning>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6" suppressHydrationWarning>
-        <Link href="/" className="flex items-center gap-2 font-black tracking-normal text-ink" aria-label="TrovaBenzina home" onClick={() => setMenuOpen(false)}>
+        <Link href="/" className="flex items-center gap-2 tracking-normal text-ink" aria-label="TrovaBenzina home" onClick={() => setMenuOpen(false)}>
           <Image src={withBasePath("/brand/trovabenzina-mark.svg")} alt="" width={40} height={40} priority />
-          <span className="leading-none">
-            <span>Trova</span>
-            <span className="text-[#d49318]">Benzina</span>
+          <span className="grid leading-none">
+            <span className="text-base font-black md:text-lg">
+              <span>Trova</span>
+              <span className="text-[#d49318]">Benzina</span>
+            </span>
+            <span className="mt-0.5 text-[10px] font-bold leading-tight text-petrol md:text-xs">Trova il pieno che fa meno male.</span>
           </span>
         </Link>
         <nav aria-label="Navigazione principale" className="hidden items-center gap-1 md:flex">
