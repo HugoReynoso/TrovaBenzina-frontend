@@ -19,6 +19,7 @@ interface StationMapProps {
   fuelType: FuelTypeCode;
   serviceMode: ServiceMode;
   averagePrice: number;
+  userPosition?: { latitude: number; longitude: number } | null;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
 }
 
@@ -165,30 +166,35 @@ function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (pos
   );
 }
 
-function CityMapController({ city }: { city: City }) {
+function CityMapController({ city, userPosition }: { city: City; userPosition?: { latitude: number; longitude: number } | null }) {
   const map = useMap();
 
   useEffect(() => {
+    if (userPosition) {
+      map.setView([userPosition.latitude, userPosition.longitude], Math.max(map.getZoom(), 14), { animate: true });
+      return;
+    }
+
     map.setView([city.latitude, city.longitude], 12, { animate: true });
-  }, [city.id, city.latitude, city.longitude, map]);
+  }, [city.id, city.latitude, city.longitude, map, userPosition]);
 
   return null;
 }
 
-export function StationMap({ city, stations, fuelType, serviceMode, averagePrice, onUserPositionChange }: StationMapProps) {
+export function StationMap({ city, stations, fuelType, serviceMode, averagePrice, userPosition, onUserPositionChange }: StationMapProps) {
   const [zoom, setZoom] = useState(12);
   const precision = clusterPrecision(zoom);
   const clusters = useMemo(() => buildClusters(stations, precision), [precision, stations]);
 
   return (
-    <div className="h-[58vh] min-h-[390px] overflow-hidden rounded-md border border-ink/10 shadow-soft sm:h-[62vh] md:h-[680px]">
+    <div className="h-[54vh] min-h-[360px] overflow-hidden rounded-md border border-ink/10 shadow-soft sm:h-[62vh] md:h-[680px]">
       <MapContainer center={[city.latitude, city.longitude]} zoom={12} scrollWheelZoom className="z-0 h-full">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ZoomTracker onZoomChange={setZoom} />
-        <CityMapController city={city} />
+        <CityMapController city={city} userPosition={userPosition} />
         <LocationControl onUserPositionChange={onUserPositionChange} />
         {clusters.map((cluster) => {
           if (cluster.stations.length > 1) {

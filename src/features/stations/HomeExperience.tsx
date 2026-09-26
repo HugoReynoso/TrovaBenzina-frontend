@@ -159,6 +159,12 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
       handleUserPositionChange(position);
     } catch {
+      if (userPosition) {
+        handleUserPositionChange(userPosition);
+        setError("");
+        return;
+      }
+
       setError("Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.");
     } finally {
       setIsLoading(false);
@@ -306,28 +312,40 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   return (
     <>
       {isLoading ? <DataLoadingOverlay /> : null}
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-5 md:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
-        <div className="grid gap-4">
-          <div className="grid gap-4 rounded-md border border-ink/10 bg-white p-4 shadow-sm">
-            <div>
-              <p className="text-sm font-black text-petrol">Trova il pieno che fa meno male.</p>
-              <h1 className="mt-1 text-2xl font-black leading-tight text-ink md:text-4xl">
+      <section className="mx-auto grid max-w-7xl gap-3 px-3 py-3 md:gap-5 md:px-6 md:py-5 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
+        <div className="grid gap-3 md:gap-4">
+          <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:gap-4 md:p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.08em] text-petrol md:text-sm md:normal-case md:tracking-normal">Trova il pieno che fa meno male.</p>
+                <h1 className="mt-1 text-xl font-black leading-tight text-ink md:text-4xl">
                 Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
-              </h1>
+                </h1>
+              </div>
+              <button
+                type="button"
+                className="grid size-11 shrink-0 place-items-center rounded-md bg-petrol text-white shadow-sm transition hover:bg-[#104955] md:hidden"
+                aria-label="Usa la mia posizione"
+                onClick={requestUserPosition}
+              >
+                <LocateFixed size={20} aria-hidden="true" />
+              </button>
             </div>
-            <div className="grid gap-3 rounded-md bg-ink/[0.035] p-3 md:grid-cols-[1.05fr_0.9fr_1.15fr_auto] md:items-end">
-              <ProvinceSelector provinces={provinces} value={selectedProvince.id} onChange={handleProvinceChange} />
-              <FuelSelector value={fuelType} onChange={handleFuelChange} />
+            <div className="grid gap-2 rounded-md bg-ink/[0.035] p-2.5 md:gap-3 md:p-3 lg:grid-cols-[1.05fr_0.9fr_1.15fr_auto] lg:items-end">
+              <div className="grid gap-2 sm:grid-cols-2 lg:contents">
+                <ProvinceSelector provinces={provinces} value={selectedProvince.id} onChange={handleProvinceChange} />
+                <FuelSelector value={fuelType} onChange={handleFuelChange} />
+              </div>
               <ServiceModeSelector value={serviceMode} onChange={setServiceMode} />
               <button
                 type="button"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-petrol px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#104955]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-petrol px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#104955] md:h-12"
                 onClick={() => setSearchVersion((version) => version + 1)}
               >
                 <Search size={17} aria-hidden="true" />
                 Trova
               </button>
-              <div className="md:col-span-4">
+              <div className="hidden lg:col-span-4 lg:block">
                 <button
                   type="button"
                   className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-petrol/20 bg-white px-4 text-sm font-black text-petrol shadow-sm transition hover:border-petrol/45 md:w-auto"
@@ -338,24 +356,12 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                 </button>
               </div>
             </div>
-            {error ? <p className="rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
-          </div>
-
-          <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:hidden">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink/52">Zona</p>
-                <p className="text-base font-black text-ink">{isUsingUserPosition ? "Intorno a te" : selectedProvince.name}</p>
-              </div>
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-petrol px-3 text-xs font-black text-white"
-                onClick={requestUserPosition}
-              >
-                <LocateFixed size={15} aria-hidden="true" />
-                Vicino a me
-              </button>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-ink/62">
+              <span className="rounded-md bg-petrol/8 px-2 py-1 text-petrol">{isUsingUserPosition ? "Intorno a te" : selectedProvince.name}</span>
+              <span className="rounded-md bg-amber/20 px-2 py-1">{visibleStations.length} distributori</span>
+              <span className="rounded-md bg-mint/12 px-2 py-1 text-mint">{serviceMode === "self" ? "Self service" : serviceMode === "served" ? "Servito" : "Miglior prezzo"}</span>
             </div>
+            {error ? <p className="rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
           </div>
 
           {visibleStations.length > 0 ? (
@@ -365,6 +371,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               fuelType={fuelType}
               serviceMode={serviceMode}
               averagePrice={currentStatistic.averagePrice}
+              userPosition={isUsingUserPosition ? userPosition : null}
               onUserPositionChange={handleUserPositionChange}
             />
           ) : (
@@ -378,7 +385,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             </div>
           )}
 
-          <section className="rounded-md border border-ink/10 bg-white p-4 shadow-sm md:hidden" aria-labelledby="mobile-top-5">
+          <section className="rounded-md border border-ink/10 bg-white p-3 shadow-sm md:hidden" aria-labelledby="mobile-top-5">
             <button
               type="button"
               className="flex w-full items-center justify-between gap-3 text-left"
@@ -386,13 +393,13 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               aria-expanded={mobileRankingOpen}
             >
               <span>
-                <span id="mobile-top-5" className="inline-flex items-center gap-2 text-lg font-black text-ink">
+                <span id="mobile-top-5" className="inline-flex items-center gap-2 text-base font-black leading-tight text-ink">
                   <Trophy size={20} aria-hidden="true" />
                   {rankingTitle}
                 </span>
-                <span className="mt-1 block text-sm font-bold text-ink/62">Nel raggio vicino alla zona selezionata</span>
+                <span className="mt-1 block text-xs font-bold text-ink/62">Prezzi ordinati dal piu conveniente</span>
               </span>
-              <span className="grid size-10 shrink-0 place-items-center rounded-md bg-amber text-ink">
+              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-amber text-ink">
                 {mobileRankingOpen ? <ChevronUp size={20} aria-hidden="true" /> : <ChevronDown size={20} aria-hidden="true" />}
               </span>
             </button>
