@@ -82,6 +82,12 @@ function stationsFor(cityId) {
   }));
 }
 
+function stationsForProvince(provinceId) {
+  return cities
+    .filter((city) => city.provinceId === Number(provinceId))
+    .flatMap((city) => stationsFor(city.id));
+}
+
 function statisticFor(cityId, fuelType) {
   const city = cities.find((item) => item.id === Number(cityId)) ?? cities[0];
   const stations = stationsFor(city.id);
@@ -137,10 +143,11 @@ const server = http.createServer((request, response) => {
   }
 
   if (path === "/api/stations" || path === "/api/stations/cheapest" || path === "/api/stations/nearby") {
+    const provinceId = url.searchParams.get("provinceId");
     const cityId = url.searchParams.get("cityId") ?? nearestCityId(url.searchParams.get("lat"), url.searchParams.get("lng"));
     const fuelType = url.searchParams.get("fuelType") ?? "BENZINA";
     const limit = Number(url.searchParams.get("limit") ?? "10");
-    const stations = stationsFor(cityId)
+    const stations = (provinceId ? stationsForProvince(provinceId) : stationsFor(cityId))
       .filter((station) => station.prices.some((price) => price.fuelTypeCode === fuelType))
       .slice(0, limit);
     return send(response, stations);

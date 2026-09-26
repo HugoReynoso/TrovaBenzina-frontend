@@ -115,6 +115,26 @@ select {
   color: #a22b27;
 }
 
+.station-cluster {
+  background: transparent;
+  border: 0;
+}
+
+.station-cluster__bubble {
+  align-items: center;
+  background: #165a67;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgb(23 33 28 / 0.22);
+  color: #fff;
+  display: flex;
+  font-size: 14px;
+  font-weight: 900;
+  height: 44px;
+  justify-content: center;
+  min-width: 44px;
+}
+
 .brand-logo {
   align-items: center;
   background: #17211c;

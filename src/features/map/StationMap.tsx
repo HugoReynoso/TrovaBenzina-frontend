@@ -2,9 +2,9 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LocateFixed, Navigation } from "lucide-react";
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { BrandLogo } from "@/components/BrandLogo";
 import { escapeHtml, getFuelBrand } from "@/lib/brand";
 import { formatEuro, getPriceTone, getStationPrice } from "@/lib/price";
@@ -36,6 +36,64 @@ function markerIcon(brand: string, price: number, averagePrice: number) {
     iconAnchor: [29, 42],
     popupAnchor: [0, -38]
   });
+}
+
+function clusterIcon(count: number) {
+  return L.divIcon({
+    className: "station-cluster",
+    html: `<div class="station-cluster__bubble">${count}</div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22]
+  });
+}
+
+function clusterPrecision(zoom: number): number | null {
+  if (zoom >= 14) {
+    return null;
+  }
+
+  if (zoom >= 12) {
+    return 2;
+  }
+
+  if (zoom >= 9) {
+    return 1;
+  }
+
+  return 0;
+}
+
+interface StationCluster {
+  id: string;
+  latitude: number;
+  longitude: number;
+  stations: Station[];
+}
+
+function buildClusters(stations: Station[], precision: number | null): StationCluster[] {
+  if (precision === null) {
+    return stations.map((station) => ({
+      id: `station-${station.id}`,
+      latitude: station.latitude,
+      longitude: station.longitude,
+      stations: [station]
+    }));
+  }
+
+  const buckets = new Map<string, Station[]>();
+  stations.forEach((station) => {
+    const key = `${station.latitude.toFixed(precision)}:${station.longitude.toFixed(precision)}`;
+    const bucket = buckets.get(key) ?? [];
+    bucket.push(station);
+    buckets.set(key, bucket);
+  });
+
+  return [...buckets.entries()].map(([id, bucket]) => ({
+    id,
+    latitude: bucket.reduce((total, station) => total + station.latitude, 0) / bucket.length,
+    longitude: bucket.reduce((total, station) => total + station.longitude, 0) / bucket.length,
+    stations: bucket
+  }));
 }
 
 function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (position: { latitude: number; longitude: number }) => void }) {
@@ -118,6 +176,10 @@ function CityMapController({ city }: { city: City }) {
 }
 
 export function StationMap({ city, stations, fuelType, serviceMode, averagePrice, onUserPositionChange }: StationMapProps) {
+  const [zoom, setZoom] = useState(12);
+  const precision = clusterPrecision(zoom);
+  const clusters = useMemo(() => buildClusters(stations, precision), [precision, stations]);
+
   return (
     <div className="h-[58vh] min-h-[390px] overflow-hidden rounded-md border border-ink/10 shadow-soft sm:h-[62vh] md:h-[680px]">
       <MapContainer center={[city.latitude, city.longitude]} zoom={12} scrollWheelZoom className="z-0 h-full">
@@ -125,9 +187,20 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <ZoomTracker onZoomChange={setZoom} />
         <CityMapController city={city} />
         <LocationControl onUserPositionChange={onUserPositionChange} />
-        {stations.map((station) => {
+        {clusters.map((cluster) => {
+          if (cluster.stations.length > 1) {
+            return (
+              <ClusterMarker
+                key={cluster.id}
+                cluster={cluster}
+              />
+            );
+          }
+
+          const station = cluster.stations[0];
           const price = getStationPrice(station, fuelType, serviceMode);
           if (!price) {
             return null;
@@ -135,7 +208,7 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
 
           return (
             <Marker
-              key={station.id}
+              key={cluster.id}
               position={[station.latitude, station.longitude]}
               icon={markerIcon(station.brand, price.price, averagePrice)}
             >
@@ -177,5 +250,33 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
         })}
       </MapContainer>
     </div>
+  );
+}
+
+function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+  const map = useMapEvents({
+    zoomend: () => onZoomChange(map.getZoom())
+  });
+
+  useEffect(() => {
+    onZoomChange(map.getZoom());
+  }, [map, onZoomChange]);
+
+  return null;
+}
+
+function ClusterMarker({ cluster }: { cluster: StationCluster }) {
+  const map = useMap();
+
+  return (
+    <Marker
+      position={[cluster.latitude, cluster.longitude]}
+      icon={clusterIcon(cluster.stations.length)}
+      eventHandlers={{
+        click: () => {
+          map.setView([cluster.latitude, cluster.longitude], Math.min(map.getZoom() + 2, 16), { animate: true });
+        }
+      }}
+    />
   );
 }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getCheapestStations, getNearbyStations } from "./stations";
+import { getCheapestStations, getNearbyStations, getStations } from "./stations";
 
 describe("stations API", () => {
   afterEach(() => {
@@ -86,6 +86,22 @@ describe("stations API", () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:8080/api/stations/nearby?cityId=1&city=Milano&province=Milano&fuelType=BENZINA&selfService=true&radiusKm=10&limit=50",
+      expect.objectContaining({ next: { revalidate: 300 } })
+    );
+  });
+
+  it("requests stations once by province", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getStations({ provinceId: 1, fuelType: "BENZINA", serviceMode: "self" });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/api/stations?provinceId=1&fuelType=BENZINA&selfService=true",
       expect.objectContaining({ next: { revalidate: 300 } })
     );
   });

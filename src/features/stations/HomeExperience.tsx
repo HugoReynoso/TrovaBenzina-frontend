@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Trophy } from "lucide-react";
+import { ChevronDown, ChevronUp, LocateFixed, Search, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Accordion } from "@/components/Accordion";
-import { CitySelector } from "@/features/filters/CitySelector";
 import { FuelSelector } from "@/features/filters/FuelSelector";
+import { ProvinceSelector } from "@/features/filters/ProvinceSelector";
 import { ServiceModeSelector } from "@/features/filters/ServiceModeSelector";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import { CheapestStations } from "@/features/stations/CheapestStations";
@@ -15,17 +15,19 @@ import { PriceHistoryChart } from "@/features/statistics/PriceHistoryChart";
 import { StatsCards } from "@/features/statistics/StatsCards";
 import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCityFuelStatistics, getPriceHistory } from "@/lib/api/statistics";
-import { getNearbyStations } from "@/lib/api/stations";
+import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { sortStationsByPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
-import type { City } from "@/types/location";
+import type { City, Province } from "@/types/location";
 import type { Station } from "@/types/station";
 import type { CityFuelStatistic, PriceHistoryPoint } from "@/types/statistics";
 
 interface HomeExperienceProps {
   cities: City[];
+  provinces: Province[];
   initialCity: City;
+  initialProvince: Province;
   stations: Station[];
   statistic: CityFuelStatistic;
   history: PriceHistoryPoint[];
@@ -57,10 +59,19 @@ function distanceKm(from: { latitude: number; longitude: number }, to: { latitud
   return 2 * earthRadiusKm * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
-export function HomeExperience({ cities, initialCity, stations, statistic, history }: HomeExperienceProps) {
+function findProvinceCenter(cities: City[], province: Province, fallbackCity: City): City {
+  return (
+    cities.find((city) => city.provinceId === province.id && city.name.toLowerCase() === province.name.toLowerCase()) ??
+    cities.find((city) => city.provinceId === province.id) ??
+    fallbackCity
+  );
+}
+
+export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, history }: HomeExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
-  const [citySlug, setCitySlug] = useState(initialCity.slug);
+  const [provinceId, setProvinceId] = useState(initialProvince.id);
+  const [searchVersion, setSearchVersion] = useState(0);
   const [mobileRankingOpen, setMobileRankingOpen] = useState(true);
   const [visibleStations, setVisibleStations] = useState(stations);
   const [cheapest, setCheapest] = useState(() => sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5));
@@ -69,28 +80,32 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
-  const userSelectedCityRef = useRef(false);
+  const userSelectedProvinceRef = useRef(false);
   const dataCacheRef = useRef(new Map<string, LoadedCityData>());
-  const loadedKeyRef = useRef(`city:${initialCity.id}:BENZINA:self`);
+  const loadedKeyRef = useRef(`province:${initialProvince.id}:BENZINA:self:0`);
 
+  const selectedProvince = useMemo(
+    () => provinces.find((province) => province.id === provinceId) ?? initialProvince,
+    [initialProvince, provinceId, provinces]
+  );
   const selectedCity = useMemo(
-    () => cities.find((city) => city.slug === citySlug) ?? initialCity,
-    [cities, citySlug, initialCity]
+    () => findProvinceCenter(cities, selectedProvince, initialCity),
+    [cities, initialCity, selectedProvince]
   );
   const selectedCityId = selectedCity.id;
-  const isUsingUserPosition = Boolean(userPosition) && !userSelectedCityRef.current;
+  const isUsingUserPosition = Boolean(userPosition) && !userSelectedProvinceRef.current;
   const rankingTitle = isUsingUserPosition
     ? "Top 5 piu economici intorno a te"
-    : `Top 5 piu economici a ${selectedCity.name} e dintorni`;
+    : `Top 5 piu economici in provincia di ${selectedProvince.name}`;
 
   useEffect(() => {
-    dataCacheRef.current.set(`city:${initialCity.id}:BENZINA:self`, {
+    dataCacheRef.current.set(`province:${initialProvince.id}:BENZINA:self:0`, {
       stations,
       cheapest: sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5),
       statistic,
       history
     });
-  }, [history, initialCity.id, statistic, stations]);
+  }, [history, initialProvince.id, statistic, stations]);
 
   function handleFuelChange(nextFuelType: FuelTypeCode) {
     setFuelType(nextFuelType);
@@ -100,19 +115,47 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
     }
   }
 
-  function handleCityChange(nextSlug: string) {
-    userSelectedCityRef.current = true;
-    setCitySlug(nextSlug);
+  function handleProvinceChange(nextProvinceId: number) {
+    userSelectedProvinceRef.current = true;
+    setProvinceId(nextProvinceId);
+  }
+
+  function requestUserPosition() {
+    if (!navigator.geolocation) {
+      setError("Geolocalizzazione non disponibile su questo dispositivo.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        handleUserPositionChange({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+        setIsLoading(false);
+      },
+      () => {
+        setIsLoading(false);
+        setError("Non riesco a usare la tua posizione. Puoi scegliere una provincia.");
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 60000,
+        timeout: 9000
+      }
+    );
   }
 
   const handleUserPositionChange = useCallback((nextPosition: UserPosition) => {
-    userSelectedCityRef.current = false;
+    userSelectedProvinceRef.current = false;
     setUserPosition(nextPosition);
 
     const nearestCity = cities.reduce((nearest, city) =>
       distanceKm(nextPosition, city) < distanceKm(nextPosition, nearest) ? city : nearest
     );
-    setCitySlug(nearestCity.slug);
+    setProvinceId(nearestCity.provinceId);
   }, [cities]);
 
   useEffect(() => {
@@ -122,7 +165,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        if (userSelectedCityRef.current) {
+        if (userSelectedProvinceRef.current) {
           return;
         }
 
@@ -133,7 +176,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
         handleUserPositionChange(currentPosition);
       },
       () => {
-        setCitySlug(initialCity.slug);
+        setProvinceId(initialProvince.id);
       },
       {
         enableHighAccuracy: true,
@@ -141,13 +184,13 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
         timeout: 7000
       }
     );
-  }, [cities, handleUserPositionChange, initialCity.slug]);
+  }, [cities, handleUserPositionChange, initialProvince.id]);
 
   useEffect(() => {
     const shouldUseUserPosition = isUsingUserPosition;
     const requestKey = shouldUseUserPosition
-      ? `nearby:${userPosition?.latitude.toFixed(4)}:${userPosition?.longitude.toFixed(4)}:${fuelType}:${serviceMode}`
-      : `city:${selectedCityId}:${fuelType}:${serviceMode}`;
+      ? `nearby:${userPosition?.latitude.toFixed(4)}:${userPosition?.longitude.toFixed(4)}:${fuelType}:${serviceMode}:${searchVersion}`
+      : `province:${selectedProvince.id}:${fuelType}:${serviceMode}:${searchVersion}`;
 
     if (requestKey === loadedKeyRef.current) {
       return;
@@ -171,7 +214,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
       setError("");
 
       try {
-        const [stationsResult, statisticResult, historyResult] = await Promise.allSettled([
+        const stationsPromise =
           shouldUseUserPosition && userPosition
             ? getNearbyStations(
                 {
@@ -184,18 +227,17 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
                 },
                 { signal: abortController.signal }
               )
-            : getNearbyStations(
+            : getStations(
                 {
-                  cityId: selectedCityId,
-                  city: selectedCity.name,
-                  province: selectedCity.provinceName,
-                  radiusKm: 10,
+                  provinceId: selectedProvince.id,
                   fuelType,
-                  serviceMode,
-                  limit: 50
+                  serviceMode
                 },
                 { signal: abortController.signal }
-              ),
+              );
+
+        const [stationsResult, statisticResult, historyResult] = await Promise.allSettled([
+          stationsPromise,
           getCityFuelStatistics(selectedCityId, fuelType, { signal: abortController.signal }),
           getPriceHistory(selectedCityId, fuelType, undefined, { signal: abortController.signal })
         ]);
@@ -208,7 +250,11 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
         const nextData = {
           stations: nextStations,
           cheapest: sortStationsByPrice(nextStations, fuelType, serviceMode).slice(0, 5),
-          statistic: statisticResult.status === "fulfilled" ? statisticResult.value : buildCityFuelStatistic(selectedCity, fuelType, nextStations),
+          statistic: nextStations.length > 0
+            ? buildCityFuelStatistic(selectedCity, fuelType, nextStations)
+            : statisticResult.status === "fulfilled"
+              ? statisticResult.value
+              : buildCityFuelStatistic(selectedCity, fuelType, nextStations),
           history: historyResult.status === "fulfilled" ? historyResult.value : []
         };
 
@@ -240,28 +286,61 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
     return () => {
       abortController.abort();
     };
-  }, [fuelType, isUsingUserPosition, selectedCity, selectedCityId, serviceMode, userPosition]);
+  }, [fuelType, isUsingUserPosition, searchVersion, selectedCity, selectedCityId, selectedProvince.id, serviceMode, userPosition]);
 
   return (
     <>
       {isLoading ? <DataLoadingOverlay /> : null}
       <section className="mx-auto grid max-w-7xl gap-5 px-4 py-5 md:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
         <div className="grid gap-4">
-          <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-4 shadow-sm">
+          <div className="grid gap-4 rounded-md border border-ink/10 bg-white p-4 shadow-sm">
             <div>
               <p className="text-sm font-black text-petrol">Trova il pieno che fa meno male.</p>
               <h1 className="mt-1 text-2xl font-black leading-tight text-ink md:text-4xl">
-                Prezzo {fuelType.toLowerCase()} a {selectedCity.name} oggi
+                Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
               </h1>
             </div>
-            <div className="grid gap-4">
-              <CitySelector cities={cities} value={citySlug} onChange={handleCityChange} />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FuelSelector value={fuelType} onChange={handleFuelChange} />
-                <ServiceModeSelector value={serviceMode} onChange={setServiceMode} />
+            <div className="grid gap-3 rounded-md bg-ink/[0.035] p-3 md:grid-cols-[1.05fr_0.9fr_1.15fr_auto] md:items-end">
+              <ProvinceSelector provinces={provinces} value={selectedProvince.id} onChange={handleProvinceChange} />
+              <FuelSelector value={fuelType} onChange={handleFuelChange} />
+              <ServiceModeSelector value={serviceMode} onChange={setServiceMode} />
+              <button
+                type="button"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-petrol px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#104955]"
+                onClick={() => setSearchVersion((version) => version + 1)}
+              >
+                <Search size={17} aria-hidden="true" />
+                Trova
+              </button>
+              <div className="md:col-span-4">
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-petrol/20 bg-white px-4 text-sm font-black text-petrol shadow-sm transition hover:border-petrol/45 md:w-auto"
+                  onClick={requestUserPosition}
+                >
+                  <LocateFixed size={17} aria-hidden="true" />
+                  Usa la mia posizione
+                </button>
               </div>
             </div>
             {error ? <p className="rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
+          </div>
+
+          <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink/52">Zona</p>
+                <p className="text-base font-black text-ink">{isUsingUserPosition ? "Intorno a te" : selectedProvince.name}</p>
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-petrol px-3 text-xs font-black text-white"
+                onClick={requestUserPosition}
+              >
+                <LocateFixed size={15} aria-hidden="true" />
+                Vicino a me
+              </button>
+            </div>
           </div>
 
           {visibleStations.length > 0 ? (
@@ -328,7 +407,7 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
           <StatsCards statistic={currentStatistic} />
         </div>
 
-        <CitySummary city={selectedCity} statistic={currentStatistic} />
+        <CitySummary city={selectedCity} statistic={currentStatistic} provinceName={selectedProvince.name} />
 
         <div className="grid gap-5 lg:grid-cols-[1.35fr_0.9fr]">
           <Accordion title="Storico prezzi" defaultOpen>

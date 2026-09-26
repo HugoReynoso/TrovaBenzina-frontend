@@ -3,7 +3,8 @@ import type { Station } from "@/types/station";
 import { apiGet } from "./client";
 
 interface StationQuery {
-  cityId: number;
+  cityId?: number;
+  provinceId?: number;
   fuelType: FuelTypeCode;
   serviceMode?: ServiceMode;
   recentOnly?: boolean;
@@ -60,7 +61,23 @@ function appendOptionalStationParams(params: URLSearchParams, query: { fuelType?
 }
 
 export async function getStations(query: StationQuery, init?: RequestInit): Promise<Station[]> {
-  return apiGet<Station[]>(`/api/stations?cityId=${query.cityId}&fuelType=${query.fuelType}${serviceModeToParam(query.serviceMode)}`, init);
+  const params = new URLSearchParams();
+
+  if (query.cityId) {
+    params.set("cityId", String(query.cityId));
+  }
+
+  if (query.provinceId) {
+    params.set("provinceId", String(query.provinceId));
+  }
+
+  params.set("fuelType", query.fuelType);
+
+  if (query.serviceMode && query.serviceMode !== "all") {
+    params.set("selfService", String(query.serviceMode === "self"));
+  }
+
+  return apiGet<Station[]>(`/api/stations?${params.toString()}`, init);
 }
 
 export async function getCheapestStations(

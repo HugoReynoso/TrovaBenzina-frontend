@@ -15,19 +15,22 @@ interface ServiceModeSelectorProps {
 
 export function ServiceModeSelector({ value, onChange }: ServiceModeSelectorProps) {
   return (
-    <label className="grid gap-2">
+    <fieldset className="grid gap-2">
       <span className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">Modalita</span>
-      <select
-        className="h-12 w-full rounded-md border border-ink/10 bg-white px-3 text-base font-bold text-ink shadow-sm"
-        value={value}
-        onChange={(event) => onChange(event.target.value as ServiceMode)}
-      >
+      <div className="grid grid-cols-3 rounded-md border border-ink/10 bg-white p-1 shadow-sm">
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <button
+            key={option.value}
+            type="button"
+            className={`h-10 rounded-[6px] px-2 text-xs font-black transition sm:text-sm ${
+              option.value === value ? "bg-petrol text-white shadow-sm" : "text-ink/68 hover:bg-petrol/8 hover:text-petrol"
+            }`}
+            onClick={() => onChange(option.value)}
+          >
             {option.label}
-          </option>
+          </button>
         ))}
-      </select>
-    </label>
+      </div>
+    </fieldset>
   );
 }
