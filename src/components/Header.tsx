@@ -23,7 +23,10 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6" suppressHydrationWarning>
         <Link href="/" className="flex items-center gap-2 font-black tracking-normal text-ink" aria-label="TrovaBenzina home" onClick={() => setMenuOpen(false)}>
           <Image src={withBasePath("/brand/trovabenzina-mark.svg")} alt="" width={40} height={40} priority />
-          <span className="leading-none">TrovaBenzina</span>
+          <span className="leading-none">
+            <span>Trova</span>
+            <span className="text-[#d49318]">Benzina</span>
+          </span>
         </Link>
         <nav aria-label="Navigazione principale" className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => (

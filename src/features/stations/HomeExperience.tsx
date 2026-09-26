@@ -322,7 +322,11 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
           <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:gap-4 md:p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.08em] text-petrol md:text-sm md:normal-case md:tracking-normal">Trova il pieno che fa meno male.</p>
+                <p className="text-2xl font-black leading-none text-ink md:text-4xl">
+                  <span>Trova</span>
+                  <span className="text-[#d49318]">Benzina</span>
+                </p>
+                <p className="mt-1 text-xs font-bold text-petrol md:text-sm">Trova il pieno che fa meno male.</p>
                 <h1 className="mt-1 text-xl font-black leading-tight text-ink md:text-4xl">
                   Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
                 </h1>
