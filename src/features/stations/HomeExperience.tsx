@@ -187,6 +187,8 @@ export function HomeExperience({ cities, initialCity, stations, statistic, histo
             : getNearbyStations(
                 {
                   cityId: selectedCityId,
+                  city: selectedCity.name,
+                  province: selectedCity.provinceName,
                   radiusKm: 10,
                   fuelType,
                   serviceMode,

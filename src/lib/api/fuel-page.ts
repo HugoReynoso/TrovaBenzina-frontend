@@ -23,7 +23,15 @@ export interface FuelPageData {
 export async function getFuelPageData(city: City, fuelType: FuelTypeCode, options: FuelPageDataOptions = {}): Promise<FuelPageData> {
   const serviceMode = options.serviceMode ?? "self";
   const stationsPromise = options.useNearby
-    ? getNearbyStations({ cityId: city.id, fuelType, serviceMode, radiusKm: options.radiusKm ?? 10, limit: options.limit ?? 50 })
+    ? getNearbyStations({
+        cityId: city.id,
+        city: city.name,
+        province: city.provinceName,
+        fuelType,
+        serviceMode,
+        radiusKm: options.radiusKm ?? 10,
+        limit: options.limit ?? 50
+      })
     : options.useCheapest
       ? getCheapestStations(city.id, fuelType, options.limit ?? 10, serviceMode)
       : getStations({ cityId: city.id, fuelType, serviceMode });

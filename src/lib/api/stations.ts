@@ -12,6 +12,8 @@ interface StationQuery {
 type NearbyStationQuery =
   | {
       cityId: number;
+      city?: string;
+      province?: string;
       lat?: never;
       lng?: never;
       radiusKm?: number;
@@ -21,6 +23,8 @@ type NearbyStationQuery =
     }
   | {
       cityId?: never;
+      city?: never;
+      province?: never;
       lat: number;
       lng: number;
       radiusKm?: number;
@@ -74,6 +78,12 @@ export async function getNearbyStations(query: NearbyStationQuery, init?: Reques
 
   if ("cityId" in query && query.cityId) {
     params.set("cityId", String(query.cityId));
+    if (query.city) {
+      params.set("city", query.city);
+    }
+    if (query.province) {
+      params.set("province", query.province);
+    }
   } else if ("lat" in query && "lng" in query) {
     params.set("lat", String(query.lat));
     params.set("lng", String(query.lng));

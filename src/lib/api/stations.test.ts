@@ -74,4 +74,19 @@ describe("stations API", () => {
     );
     expect(stations[0].distanceKm).toBe(1.23);
   });
+
+  it("requests nearby stations by city and province names", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getNearbyStations({ cityId: 1, city: "Milano", province: "Milano", radiusKm: 10, fuelType: "BENZINA", serviceMode: "self", limit: 50 });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/api/stations/nearby?cityId=1&city=Milano&province=Milano&fuelType=BENZINA&selfService=true&radiusKm=10&limit=50",
+      expect.objectContaining({ next: { revalidate: 300 } })
+    );
+  });
 });
