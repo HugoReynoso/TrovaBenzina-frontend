@@ -135,6 +135,11 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     setProvinceId(nextProvinceId);
   }
 
+  function searchSelectedProvince() {
+    userSelectedProvinceRef.current = true;
+    setSearchVersion((version) => version + 1);
+  }
+
   async function requestUserPosition() {
     if (!navigator.geolocation) {
       setError("Geolocalizzazione non disponibile su questo dispositivo.");
@@ -319,7 +324,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.08em] text-petrol md:text-sm md:normal-case md:tracking-normal">Trova il pieno che fa meno male.</p>
                 <h1 className="mt-1 text-xl font-black leading-tight text-ink md:text-4xl">
-                Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
+                  Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
                 </h1>
               </div>
               <button
@@ -340,7 +345,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               <button
                 type="button"
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-petrol px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#104955] md:h-12"
-                onClick={() => setSearchVersion((version) => version + 1)}
+                onClick={searchSelectedProvince}
               >
                 <Search size={17} aria-hidden="true" />
                 Trova

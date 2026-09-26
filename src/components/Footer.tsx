@@ -12,14 +12,6 @@ export function Footer() {
           <p className="mt-2">Mappe e dati cartografici: OpenStreetMap contributors.</p>
         </div>
         <nav aria-label="Link footer" className="flex flex-wrap items-center gap-x-4 gap-y-2 md:justify-end">
-          <a
-            className="text-sm font-bold text-ink/62 hover:text-petrol hover:underline"
-            href="https://hugoreynoso.github.io/#progetti"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Reynoso
-          </a>
           <Link className="hover:text-petrol hover:underline" href="/privacy">
             Privacy
           </Link>
