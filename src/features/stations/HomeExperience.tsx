@@ -67,6 +67,21 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
   );
 }
 
+function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+      },
+      reject,
+      options
+    );
+  });
+}
+
 export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, history }: HomeExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
@@ -120,7 +135,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     setProvinceId(nextProvinceId);
   }
 
-  function requestUserPosition() {
+  async function requestUserPosition() {
     if (!navigator.geolocation) {
       setError("Geolocalizzazione non disponibile su questo dispositivo.");
       return;
@@ -128,24 +143,26 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
     setIsLoading(true);
     setError("");
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        handleUserPositionChange({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
-        setIsLoading(false);
-      },
-      () => {
-        setIsLoading(false);
-        setError("Non riesco a usare la tua posizione. Puoi scegliere una provincia.");
-      },
-      {
+
+    try {
+      const position = await readBrowserPosition({
         enableHighAccuracy: true,
         maximumAge: 60000,
         timeout: 9000
-      }
-    );
+      }).catch(() =>
+        readBrowserPosition({
+          enableHighAccuracy: false,
+          maximumAge: 300000,
+          timeout: 15000
+        })
+      );
+
+      handleUserPositionChange(position);
+    } catch {
+      setError("Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleUserPositionChange = useCallback((nextPosition: UserPosition) => {
@@ -220,10 +237,8 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                 {
                   lat: userPosition.latitude,
                   lng: userPosition.longitude,
-                  radiusKm: 10,
                   fuelType,
-                  serviceMode,
-                  limit: 50
+                  serviceMode
                 },
                 { signal: abortController.signal }
               )

@@ -66,10 +66,10 @@ describe("stations API", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    const stations = await getNearbyStations({ lat: 45.53, lng: 9.04, radiusKm: 10, fuelType: "BENZINA", serviceMode: "self", limit: 50 });
+    const stations = await getNearbyStations({ lat: 45.53, lng: 9.04, fuelType: "BENZINA", serviceMode: "self" });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/stations/nearby?lat=45.53&lng=9.04&fuelType=BENZINA&selfService=true&radiusKm=10&limit=50",
+      "http://localhost:8080/api/stations/nearby?lat=45.53&lng=9.04&fuelType=BENZINA&selfService=true",
       expect.objectContaining({ next: { revalidate: 300 } })
     );
     expect(stations[0].distanceKm).toBe(1.23);
