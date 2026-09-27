@@ -9,7 +9,6 @@ import { LanguageSelector } from "./LanguageSelector";
 
 const navItems = [
   { href: "/prezzo-benzina/milano", label: "Prezzi" },
-  { href: "/storico-prezzo-benzina/milano", label: "Storico" },
   { href: "/accise-benzina", label: "Accise" },
   { href: "/notizie", label: "Notizie" },
   { href: "/segnala-prezzo", label: "Segnala" }

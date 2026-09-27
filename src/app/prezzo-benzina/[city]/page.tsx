@@ -4,7 +4,6 @@ import { Footer } from "@/components/Footer";
 import { HomeExperience } from "@/features/stations/HomeExperience";
 import { getCities, getCityBySlug } from "@/lib/api/cities";
 import { getProvinces } from "@/lib/api/provinces";
-import { getPriceHistory } from "@/lib/api/statistics";
 import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { getSeoCities } from "@/lib/seo-cities";
@@ -43,12 +42,11 @@ export default async function BenzinaCityPage({ params }: PageProps) {
   const province = provinces.find((item) => item.id === city.provinceId) ?? provinces[0];
   const stations = province ? await getStations({ provinceId: province.id, fuelType: "BENZINA", serviceMode: "self" }).catch(() => []) : [];
   const statistic = buildCityFuelStatistic(city, "BENZINA", stations);
-  const history = await getPriceHistory(city.id, "BENZINA").catch(() => []);
 
   return (
     <>
       <Header />
-      <HomeExperience cities={cities} provinces={provinces} initialCity={city} initialProvince={province} stations={stations} statistic={statistic} history={history} />
+      <HomeExperience cities={cities} provinces={provinces} initialCity={city} initialProvince={province} stations={stations} statistic={statistic} />
       <Footer />
     </>
   );

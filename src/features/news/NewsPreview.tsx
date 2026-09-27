@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { mockNews } from "@/mocks/news";
 
-export function NewsPreview() {
+interface NewsPreviewProps {
+  vertical?: boolean;
+}
+
+export function NewsPreview({ vertical = false }: NewsPreviewProps) {
   return (
     <section aria-labelledby="notizie" className="grid gap-4">
       <div className="flex items-center justify-between gap-3">
@@ -12,7 +16,7 @@ export function NewsPreview() {
           Tutte
         </Link>
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className={`grid gap-3 ${vertical ? "" : "md:grid-cols-3"}`}>
         {mockNews.slice(0, 3).map((article) => (
           <article key={article.slug} className="rounded-md border border-ink/10 bg-white p-4 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-amber">{article.category}</p>

@@ -13,19 +13,57 @@ interface PriceReportFormProps {
   cities: City[];
   initialCity?: City;
   stations: Station[];
+  initialStationId?: number;
+  initialFuelType?: FuelTypeCode;
+  initialSelfService?: boolean;
 }
 
-export function PriceReportForm({ cities, initialCity, stations }: PriceReportFormProps) {
+function normalizePriceInput(value: string): string {
+  const cleanValue = value.replace(",", ".").replace(/[^\d.]/g, "");
+
+  if (/^\d{4}$/.test(cleanValue)) {
+    return `${cleanValue.slice(0, 1)}.${cleanValue.slice(1)}`;
+  }
+
+  const [integerPart, decimalPart = ""] = cleanValue.split(".");
+  const safeInteger = integerPart.slice(0, 1);
+  const safeDecimals = decimalPart.replace(/\D/g, "").slice(0, 3);
+
+  if (!safeInteger) {
+    return "";
+  }
+
+  return safeDecimals ? `${safeInteger}.${safeDecimals}` : safeInteger;
+}
+
+function parsePrice(value: string): number | null {
+  const normalized = normalizePriceInput(value);
+
+  if (!/^\d\.\d{3}$/.test(normalized)) {
+    return null;
+  }
+
+  const parsedPrice = Number(normalized);
+
+  if (!Number.isFinite(parsedPrice) || parsedPrice < 0.5 || parsedPrice > 3.5) {
+    return null;
+  }
+
+  return parsedPrice;
+}
+
+export function PriceReportForm({ cities, initialCity, stations, initialStationId, initialFuelType = "BENZINA", initialSelfService = true }: PriceReportFormProps) {
   const initialProvinceId = initialCity?.provinceId ?? cities[0]?.provinceId ?? 0;
   const [provinceId, setProvinceId] = useState(initialProvinceId);
   const [cityId, setCityId] = useState(initialCity?.id ?? cities[0]?.id ?? 0);
   const [citySearch, setCitySearch] = useState(initialCity?.name ?? cities[0]?.name ?? "");
   const [stationSearch, setStationSearch] = useState("");
   const [availableStations, setAvailableStations] = useState(stations);
-  const [stationId, setStationId] = useState(stations[0]?.id ?? 0);
-  const [fuelTypeCode, setFuelTypeCode] = useState<FuelTypeCode>("BENZINA");
+  const [stationId, setStationId] = useState(initialStationId ?? stations[0]?.id ?? 0);
+  const [preferredStationId, setPreferredStationId] = useState(initialStationId ?? 0);
+  const [fuelTypeCode, setFuelTypeCode] = useState<FuelTypeCode>(initialFuelType);
   const [price, setPrice] = useState("");
-  const [selfService, setSelfService] = useState(true);
+  const [selfService, setSelfService] = useState(initialSelfService);
   const [reporterName, setReporterName] = useState("");
   const [reporterEmail, setReporterEmail] = useState("");
   const [note, setNote] = useState("");
@@ -34,6 +72,7 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
   const [isLoadingStations, setIsLoadingStations] = useState(false);
   const [error, setError] = useState("");
   const [stationError, setStationError] = useState("");
+  const [priceError, setPriceError] = useState("");
 
   const selectedStation = useMemo(
     () => availableStations.find((station) => station.id === stationId) ?? availableStations[0],
@@ -73,6 +112,37 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
   }, [availableStations, stationSearch]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryFuelType = params.get("fuelType");
+    const querySelfService = params.get("selfService");
+    const queryCityId = Number(params.get("cityId"));
+    const queryStationId = Number(params.get("stationId"));
+
+    if (queryFuelType && FUEL_TYPES.some((fuel) => fuel.code === queryFuelType)) {
+      setFuelTypeCode(queryFuelType as FuelTypeCode);
+    }
+
+    if (querySelfService === "true" || querySelfService === "false") {
+      setSelfService(querySelfService === "true");
+    }
+
+    if (queryStationId) {
+      setPreferredStationId(queryStationId);
+      setStationId(queryStationId);
+    }
+
+    if (queryCityId) {
+      const queryCity = cities.find((city) => city.id === queryCityId);
+
+      if (queryCity) {
+        setProvinceId(queryCity.provinceId);
+        setCityId(queryCity.id);
+        setCitySearch(queryCity.name);
+      }
+    }
+  }, [cities]);
+
+  useEffect(() => {
     const abortController = new AbortController();
 
     async function loadStations() {
@@ -89,8 +159,10 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
         const nextStations = await getStations({ cityId, fuelType: fuelTypeCode, serviceMode: "all" }, { signal: abortController.signal });
 
         if (!abortController.signal.aborted) {
+          const nextStationId = preferredStationId && nextStations.some((station) => station.id === preferredStationId) ? preferredStationId : nextStations[0]?.id ?? 0;
+
           setAvailableStations(nextStations);
-          setStationId(nextStations[0]?.id ?? 0);
+          setStationId(nextStationId);
           setStationSearch("");
         }
       } catch (loadError) {
@@ -111,7 +183,7 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
     return () => {
       abortController.abort();
     };
-  }, [cityId, fuelTypeCode]);
+  }, [cityId, fuelTypeCode, preferredStationId]);
 
   function handleCitySelect(nextCityId: number) {
     const nextCity = cities.find((city) => city.id === nextCityId);
@@ -122,6 +194,7 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
     setProvinceId(nextCity.provinceId);
     setCityId(nextCityId);
     setCitySearch(nextCity.name);
+    setPreferredStationId(0);
   }
 
   function handleProvinceSelect(nextProvinceId: number) {
@@ -131,6 +204,7 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
     if (firstCity) {
       setCityId(firstCity.id);
       setCitySearch(firstCity.name);
+      setPreferredStationId(0);
     }
   }
 
@@ -140,8 +214,16 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
       return;
     }
 
+    const parsedPrice = parsePrice(price);
+
+    if (parsedPrice === null) {
+      setPriceError("Inserisci il prezzo con tre decimali, per esempio 2.123.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
+    setPriceError("");
 
     try {
       await createPriceReport({
@@ -150,7 +232,7 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
         brand: selectedStation.brand,
         cityName: selectedStation.cityName,
         fuelTypeCode,
-        price: Number(price.replace(",", ".")),
+        price: parsedPrice,
         selfService,
         reporterName: reporterName || undefined,
         reporterEmail: reporterEmail || undefined,
@@ -268,13 +350,24 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
           <label className="grid gap-2">
             <span className="text-sm font-black text-ink">Prezzo</span>
             <input
-              className="h-12 rounded-md border border-ink/10 px-3"
+              className={`h-12 rounded-md border px-3 text-lg font-black tabular-nums ${priceError ? "border-tomato bg-tomato/5" : "border-ink/10"}`}
               inputMode="decimal"
-              placeholder="1,699"
+              placeholder="2.123"
               value={price}
-              onChange={(event) => setPrice(event.target.value)}
+              onChange={(event) => {
+                setPrice(event.target.value.replace(/[^\d.,]/g, "").slice(0, 5));
+                setPriceError("");
+              }}
+              onBlur={() => {
+                const normalizedPrice = normalizePriceInput(price);
+                setPrice(normalizedPrice);
+                setPriceError(normalizedPrice && parsePrice(normalizedPrice) === null ? "Usa il formato 2.123, con tre decimali." : "");
+              }}
               required
             />
+            <span className={`text-xs font-bold ${priceError ? "text-tomato" : "text-ink/55"}`}>
+              {priceError || "Esempio: scrivi 2123 oppure 2.123, lo sistemiamo noi."}
+            </span>
           </label>
 
           <fieldset className="grid gap-2">

@@ -2,8 +2,8 @@ import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City } from "@/types/location";
 import type { Station } from "@/types/station";
-import type { CityFuelStatistic, PriceHistoryPoint } from "@/types/statistics";
-import { getCityFuelStatistics, getPriceHistory } from "./statistics";
+import type { CityFuelStatistic } from "@/types/statistics";
+import { getCityFuelStatistics } from "./statistics";
 import { getCheapestStations, getNearbyStations, getStations } from "./stations";
 
 interface FuelPageDataOptions {
@@ -17,7 +17,6 @@ interface FuelPageDataOptions {
 export interface FuelPageData {
   stations: Station[];
   statistic: CityFuelStatistic;
-  history: PriceHistoryPoint[];
 }
 
 export async function getFuelPageData(city: City, fuelType: FuelTypeCode, options: FuelPageDataOptions = {}): Promise<FuelPageData> {
@@ -36,17 +35,15 @@ export async function getFuelPageData(city: City, fuelType: FuelTypeCode, option
       ? getCheapestStations(city.id, fuelType, options.limit ?? 10, serviceMode)
       : getStations({ cityId: city.id, fuelType, serviceMode });
 
-  const [stationsResult, statisticResult, historyResult] = await Promise.allSettled([
+  const [stationsResult, statisticResult] = await Promise.allSettled([
     stationsPromise,
-    getCityFuelStatistics(city.id, fuelType),
-    getPriceHistory(city.id, fuelType)
+    getCityFuelStatistics(city.id, fuelType)
   ]);
 
   const stations = stationsResult.status === "fulfilled" ? stationsResult.value : [];
 
   return {
     stations,
-    statistic: statisticResult.status === "fulfilled" ? statisticResult.value : buildCityFuelStatistic(city, fuelType, stations),
-    history: historyResult.status === "fulfilled" ? historyResult.value : []
+    statistic: statisticResult.status === "fulfilled" ? statisticResult.value : buildCityFuelStatistic(city, fuelType, stations)
   };
 }

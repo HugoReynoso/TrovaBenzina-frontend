@@ -3,7 +3,8 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect, useMemo, useState } from "react";
-import { LocateFixed, Navigation } from "lucide-react";
+import { LocateFixed, Navigation, PencilLine } from "lucide-react";
+import Link from "next/link";
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { BrandLogo } from "@/components/BrandLogo";
 import { escapeHtml, getFuelBrand } from "@/lib/brand";
@@ -212,6 +213,8 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
             return null;
           }
 
+          const reportHref = `/segnala-prezzo?stationId=${station.id}&cityId=${station.cityId}&fuelType=${fuelType}&selfService=${price.selfService}`;
+
           return (
             <Marker
               key={cluster.id}
@@ -240,15 +243,24 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
                   <p className="mt-2 text-xs text-ink/58">
                     Aggiornato: {new Intl.DateTimeFormat("it-IT").format(new Date(price.communicatedAt))}
                   </p>
-                  <a
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-amber px-3 py-2.5 text-sm font-black text-ink shadow-sm transition hover:bg-[#e0a42f]"
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Navigation size={16} aria-hidden="true" />
-                    Apri percorso
-                  </a>
+                  <div className="mt-3 grid grid-cols-[0.9fr_1.1fr] gap-2">
+                    <Link
+                      className="inline-flex items-center justify-center gap-1.5 rounded-md border border-petrol/20 bg-petrol/8 px-2 py-2 text-xs font-black text-petrol transition hover:border-petrol/45 hover:bg-petrol/12"
+                      href={reportHref}
+                    >
+                      <PencilLine size={14} aria-hidden="true" />
+                      Aggiorna
+                    </Link>
+                    <a
+                      className="inline-flex items-center justify-center gap-1.5 rounded-md bg-amber px-2 py-2 text-xs font-black text-ink shadow-sm transition hover:bg-[#e0a42f]"
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Navigation size={14} aria-hidden="true" />
+                      Percorso
+                    </a>
+                  </div>
                 </article>
               </Popup>
             </Marker>

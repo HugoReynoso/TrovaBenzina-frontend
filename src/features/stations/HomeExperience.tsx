@@ -11,17 +11,16 @@ import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import { CheapestStations } from "@/features/stations/CheapestStations";
 import { CitySummary } from "@/features/statistics/CitySummary";
 import { FuelComposition } from "@/features/statistics/FuelComposition";
-import { PriceHistoryChart } from "@/features/statistics/PriceHistoryChart";
 import { StatsCards } from "@/features/statistics/StatsCards";
 import { NewsPreview } from "@/features/news/NewsPreview";
-import { getCityFuelStatistics, getPriceHistory } from "@/lib/api/statistics";
+import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { sortStationsByPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City, Province } from "@/types/location";
 import type { Station } from "@/types/station";
-import type { CityFuelStatistic, PriceHistoryPoint } from "@/types/statistics";
+import type { CityFuelStatistic } from "@/types/statistics";
 
 interface HomeExperienceProps {
   cities: City[];
@@ -30,14 +29,12 @@ interface HomeExperienceProps {
   initialProvince: Province;
   stations: Station[];
   statistic: CityFuelStatistic;
-  history: PriceHistoryPoint[];
 }
 
 interface LoadedCityData {
   stations: Station[];
   cheapest: Station[];
   statistic: CityFuelStatistic;
-  history: PriceHistoryPoint[];
 }
 
 interface UserPosition {
@@ -82,7 +79,7 @@ function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
   });
 }
 
-export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, history }: HomeExperienceProps) {
+export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic }: HomeExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
   const [provinceId, setProvinceId] = useState(initialProvince.id);
@@ -91,7 +88,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const [visibleStations, setVisibleStations] = useState(stations);
   const [cheapest, setCheapest] = useState(() => sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5));
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
-  const [currentHistory, setCurrentHistory] = useState(history);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
@@ -117,10 +113,9 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     dataCacheRef.current.set(`province:${initialProvince.id}:BENZINA:self:0`, {
       stations,
       cheapest: sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5),
-      statistic,
-      history
+      statistic
     });
-  }, [history, initialProvince.id, statistic, stations]);
+  }, [initialProvince.id, statistic, stations]);
 
   function handleFuelChange(nextFuelType: FuelTypeCode) {
     setFuelType(nextFuelType);
@@ -229,7 +224,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       setVisibleStations(cachedData.stations);
       setCheapest(cachedData.cheapest);
       setCurrentStatistic(cachedData.statistic);
-      setCurrentHistory(cachedData.history);
       setError("");
       loadedKeyRef.current = requestKey;
       return;
@@ -262,10 +256,9 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                 { signal: abortController.signal }
               );
 
-        const [stationsResult, statisticResult, historyResult] = await Promise.allSettled([
+        const [stationsResult, statisticResult] = await Promise.allSettled([
           stationsPromise,
-          getCityFuelStatistics(selectedCityId, fuelType, { signal: abortController.signal }),
-          getPriceHistory(selectedCityId, fuelType, undefined, { signal: abortController.signal })
+          getCityFuelStatistics(selectedCityId, fuelType, { signal: abortController.signal })
         ]);
 
         if (abortController.signal.aborted) {
@@ -280,8 +273,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             ? buildCityFuelStatistic(selectedCity, fuelType, nextStations)
             : statisticResult.status === "fulfilled"
               ? statisticResult.value
-              : buildCityFuelStatistic(selectedCity, fuelType, nextStations),
-          history: historyResult.status === "fulfilled" ? historyResult.value : []
+              : buildCityFuelStatistic(selectedCity, fuelType, nextStations)
         };
 
         dataCacheRef.current.set(requestKey, nextData);
@@ -289,7 +281,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
         setVisibleStations(nextData.stations);
         setCheapest(nextData.cheapest);
         setCurrentStatistic(nextData.statistic);
-        setCurrentHistory(nextData.history);
 
         if (stationsResult.status === "rejected") {
           setError(stationsResult.reason instanceof Error ? stationsResult.reason.message : "Impossibile caricare i distributori.");
@@ -435,16 +426,12 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
         <CitySummary city={selectedCity} statistic={currentStatistic} provinceName={selectedProvince.name} />
 
-        <div className="grid gap-5 lg:grid-cols-[1.35fr_0.9fr]">
-          <Accordion title="Storico prezzi" defaultOpen>
-            <PriceHistoryChart points={currentHistory} fallbackStatistic={currentStatistic} />
-          </Accordion>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_360px] lg:items-start">
           <Accordion title="Accise e composizione prezzo" defaultOpen>
             <FuelComposition />
           </Accordion>
+          <NewsPreview vertical />
         </div>
-
-        <NewsPreview />
       </main>
     </>
   );

@@ -11,8 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const cityRoutes = getSeoCities(cities).flatMap((city) => [
     `/prezzo-benzina/${city.slug}`,
     `/prezzo-diesel/${city.slug}`,
-    `/prezzo-gpl/${city.slug}`,
-    `/storico-prezzo-benzina/${city.slug}`
+    `/prezzo-gpl/${city.slug}`
   ]);
   const newsRoutes = ["/notizie", ...mockNews.map((article) => `/notizie/${article.slug}`)];
 
