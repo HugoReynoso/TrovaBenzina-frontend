@@ -90,6 +90,21 @@ describe("stations API", () => {
     );
   });
 
+  it("requests nearby stations by city and province code with limit", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getNearbyStations({ city: "Milano", province: "MI", limit: 800 });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/api/stations/nearby?city=Milano&province=MI&limit=800",
+      expect.objectContaining({ next: { revalidate: 300 } })
+    );
+  });
+
   it("requests stations once by province", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })
@@ -97,11 +112,11 @@ describe("stations API", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    await getStations({ provinceId: 1, fuelType: "BENZINA", serviceMode: "self" });
+    await getStations({ provinceId: 1, limit: 1500 });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/stations?provinceId=1&fuelType=BENZINA&selfService=true",
+      "http://localhost:8080/api/stations?provinceId=1&limit=1500",
       expect.objectContaining({ next: { revalidate: 300 } })
     );
   });

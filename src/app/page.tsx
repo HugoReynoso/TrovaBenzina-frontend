@@ -23,7 +23,7 @@ export default async function HomePage() {
   const [cities, provinces] = await Promise.all([getCities(), getProvinces()]);
   const city = cities.find((item) => item.slug === "milano") ?? cities[0];
   const province = provinces.find((item) => item.id === city.provinceId) ?? provinces[0];
-  const stations = province ? await getStations({ provinceId: province.id, fuelType: "BENZINA", serviceMode: "self" }).catch(() => []) : [];
+  const stations = province ? await getStations({ provinceId: province.id, limit: 1500 }).catch(() => []) : [];
   const statistic = buildCityFuelStatistic(city, "BENZINA", stations);
 
   return (

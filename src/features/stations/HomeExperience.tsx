@@ -240,18 +240,16 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
           shouldUseUserPosition && userPosition
             ? getNearbyStations(
                 {
-                  lat: userPosition.latitude,
-                  lng: userPosition.longitude,
-                  fuelType,
-                  serviceMode
+                  city: selectedCity.name,
+                  province: selectedProvince.code,
+                  limit: 800
                 },
                 { signal: abortController.signal }
               )
             : getStations(
                 {
                   provinceId: selectedProvince.id,
-                  fuelType,
-                  serviceMode
+                  limit: 1500
                 },
                 { signal: abortController.signal }
               );
@@ -303,7 +301,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     return () => {
       abortController.abort();
     };
-  }, [fuelType, isUsingUserPosition, searchVersion, selectedCity, selectedCityId, selectedProvince.id, serviceMode, userPosition]);
+  }, [fuelType, isUsingUserPosition, searchVersion, selectedCity, selectedCityId, selectedProvince.code, selectedProvince.id, serviceMode, userPosition]);
 
   return (
     <>

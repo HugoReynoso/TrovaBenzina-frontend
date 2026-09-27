@@ -5,14 +5,15 @@ import { apiGet } from "./client";
 interface StationQuery {
   cityId?: number;
   provinceId?: number;
-  fuelType: FuelTypeCode;
+  fuelType?: FuelTypeCode;
   serviceMode?: ServiceMode;
+  limit?: number;
   recentOnly?: boolean;
 }
 
 type NearbyStationQuery =
   | {
-      cityId: number;
+      cityId?: number;
       city?: string;
       province?: string;
       lat?: never;
@@ -71,10 +72,16 @@ export async function getStations(query: StationQuery, init?: RequestInit): Prom
     params.set("provinceId", String(query.provinceId));
   }
 
-  params.set("fuelType", query.fuelType);
+  if (query.fuelType) {
+    params.set("fuelType", query.fuelType);
+  }
 
   if (query.serviceMode && query.serviceMode !== "all") {
     params.set("selfService", String(query.serviceMode === "self"));
+  }
+
+  if (query.limit) {
+    params.set("limit", String(query.limit));
   }
 
   return apiGet<Station[]>(`/api/stations?${params.toString()}`, init);
@@ -95,12 +102,14 @@ export async function getNearbyStations(query: NearbyStationQuery, init?: Reques
 
   if ("cityId" in query && query.cityId) {
     params.set("cityId", String(query.cityId));
-    if (query.city) {
-      params.set("city", query.city);
-    }
-    if (query.province) {
-      params.set("province", query.province);
-    }
+  }
+
+  if ("city" in query && query.city) {
+    params.set("city", query.city);
+  }
+
+  if ("province" in query && query.province) {
+    params.set("province", query.province);
   } else if ("lat" in query && "lng" in query) {
     params.set("lat", String(query.lat));
     params.set("lng", String(query.lng));
