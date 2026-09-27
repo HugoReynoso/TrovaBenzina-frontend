@@ -6,4 +6,9 @@ export interface NewsArticle {
   category: string;
   image: string;
   content: string[];
+  relatedLinks?: Array<{
+    href: string;
+    label: string;
+    description: string;
+  }>;
 }

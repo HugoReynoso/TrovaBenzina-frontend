@@ -24,6 +24,9 @@ export function NewsPreview({ vertical = false }: NewsPreviewProps) {
               <Link href={`/notizie/${article.slug}`}>{article.title}</Link>
             </h3>
             <p className="mt-2 text-sm text-ink/66">{article.excerpt}</p>
+            <Link className="mt-3 inline-flex text-sm font-black text-petrol hover:underline" href={`/notizie/${article.slug}`}>
+              Leggi guida
+            </Link>
           </article>
         ))}
       </div>

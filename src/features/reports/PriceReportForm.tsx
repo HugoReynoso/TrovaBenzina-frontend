@@ -341,9 +341,9 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[0.9fr_1fr_1.1fr]">
-          <label className="grid gap-2">
-            <span className="text-sm font-black text-ink">Carburante</span>
+        <div className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-[0.9fr_1fr_1.1fr]">
+          <label className="grid content-start gap-2">
+            <span className="flex min-h-5 items-center text-sm font-black text-ink">Carburante</span>
             <select
               className="h-12 rounded-md border border-ink/10 bg-white px-3"
               value={fuelTypeCode}
@@ -362,10 +362,11 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
                 </option>
               ))}
             </select>
+            <span className="min-h-8" aria-hidden="true" />
           </label>
 
-          <label className="grid gap-2">
-            <span className="text-sm font-black text-ink">Prezzo</span>
+          <label className="grid content-start gap-2">
+            <span className="flex min-h-5 items-center text-sm font-black text-ink">Prezzo</span>
             <input
               className={`h-12 rounded-md border px-3 text-lg font-black tabular-nums ${priceError ? "border-tomato bg-tomato/5" : "border-ink/10"}`}
               inputMode="decimal"
@@ -387,8 +388,8 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
             </span>
           </label>
 
-          <fieldset className="grid min-w-0 gap-2 md:col-span-2 lg:col-span-1">
-            <legend className="text-sm font-black text-ink">Modalita</legend>
+          <fieldset className="grid min-w-0 content-start gap-2 md:col-span-2 lg:col-span-1">
+            <legend className="flex min-h-5 items-center text-sm font-black text-ink">Modalita</legend>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -407,6 +408,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
                 Servito
               </button>
             </div>
+            <span className="min-h-8" aria-hidden="true" />
           </fieldset>
         </div>
 
@@ -471,11 +473,11 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
 
         <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-2">
-            <span className="text-sm font-black text-ink">Nome opzionale</span>
+            <span className="text-sm font-black text-ink">Nome (opzionale)</span>
             <input className="h-12 rounded-md border border-ink/10 px-3" value={reporterName} onChange={(event) => setReporterName(event.target.value)} />
           </label>
           <label className="grid gap-2">
-            <span className="text-sm font-black text-ink">Email opzionale</span>
+            <span className="text-sm font-black text-ink">Email (opzionale)</span>
             <input
               className="h-12 rounded-md border border-ink/10 px-3"
               type="email"
@@ -486,7 +488,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
         </div>
 
         <label className="grid gap-2">
-          <span className="text-sm font-black text-ink">Nota opzionale</span>
+          <span className="text-sm font-black text-ink">Nota (opzionale)</span>
           <textarea
             className="min-h-28 rounded-md border border-ink/10 p-3"
             value={note}
