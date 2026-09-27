@@ -21,7 +21,9 @@ export function Footer() {
           <Link className="hover:text-petrol hover:underline" href="/cookie-policy">
             Cookie
           </Link>
-          <span>Contatti futuri</span>
+          <a className="hover:text-petrol hover:underline" href="https://hugoreynoso.github.io/progetti/" target="_blank" rel="noreferrer">
+            Contatti futuri
+          </a>
         </nav>
       </div>
     </footer>
