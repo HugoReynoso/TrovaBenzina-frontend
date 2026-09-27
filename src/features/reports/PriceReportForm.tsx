@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Search, Send } from "lucide-react";
+import { CheckCircle2, MapPin, Search, Send, Store } from "lucide-react";
 import { createPriceReport } from "@/lib/api/reports";
 import { getStations } from "@/lib/api/stations";
 import type { FuelTypeCode } from "@/types/fuel";
@@ -16,8 +16,11 @@ interface PriceReportFormProps {
 }
 
 export function PriceReportForm({ cities, initialCity, stations }: PriceReportFormProps) {
+  const initialProvinceId = initialCity?.provinceId ?? cities[0]?.provinceId ?? 0;
+  const [provinceId, setProvinceId] = useState(initialProvinceId);
   const [cityId, setCityId] = useState(initialCity?.id ?? cities[0]?.id ?? 0);
   const [citySearch, setCitySearch] = useState(initialCity?.name ?? cities[0]?.name ?? "");
+  const [stationSearch, setStationSearch] = useState("");
   const [availableStations, setAvailableStations] = useState(stations);
   const [stationId, setStationId] = useState(stations[0]?.id ?? 0);
   const [fuelTypeCode, setFuelTypeCode] = useState<FuelTypeCode>("BENZINA");
@@ -36,14 +39,38 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
     () => availableStations.find((station) => station.id === stationId) ?? availableStations[0],
     [availableStations, stationId]
   );
+  const provinces = useMemo(() => {
+    const byId = new Map<number, string>();
+    cities.forEach((city) => byId.set(city.provinceId, city.provinceName));
+
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((left, right) => left.name.localeCompare(right.name, "it"));
+  }, [cities]);
+  const provinceCities = useMemo(
+    () => cities.filter((city) => city.provinceId === provinceId).sort((left, right) => left.name.localeCompare(right.name, "it")),
+    [cities, provinceId]
+  );
   const filteredCities = useMemo(() => {
     const query = citySearch.trim().toLowerCase();
-    const matches = query.length < 2 ? cities.slice(0, 40) : cities.filter((city) => city.name.toLowerCase().includes(query));
+    const source = provinceCities.length > 0 ? provinceCities : cities;
+    const matches = query.length < 2 ? source.slice(0, 8) : source.filter((city) => city.name.toLowerCase().includes(query));
     const selectedCity = cities.find((city) => city.id === cityId);
     const visibleCities = selectedCity && !matches.some((city) => city.id === selectedCity.id) ? [selectedCity, ...matches] : matches;
 
-    return visibleCities.slice(0, 80);
-  }, [cities, cityId, citySearch]);
+    return visibleCities.slice(0, 10);
+  }, [cities, cityId, citySearch, provinceCities]);
+  const filteredStations = useMemo(() => {
+    const query = stationSearch.trim().toLowerCase();
+
+    if (!query) {
+      return availableStations;
+    }
+
+    return availableStations.filter((station) =>
+      [station.brand, station.name, station.address, station.cityName].some((value) => value.toLowerCase().includes(query))
+    );
+  }, [availableStations, stationSearch]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -64,6 +91,7 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
         if (!abortController.signal.aborted) {
           setAvailableStations(nextStations);
           setStationId(nextStations[0]?.id ?? 0);
+          setStationSearch("");
         }
       } catch (loadError) {
         if (!abortController.signal.aborted) {
@@ -87,8 +115,23 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
 
   function handleCitySelect(nextCityId: number) {
     const nextCity = cities.find((city) => city.id === nextCityId);
+    if (!nextCity) {
+      return;
+    }
+
+    setProvinceId(nextCity.provinceId);
     setCityId(nextCityId);
-    setCitySearch(nextCity?.name ?? "");
+    setCitySearch(nextCity.name);
+  }
+
+  function handleProvinceSelect(nextProvinceId: number) {
+    setProvinceId(nextProvinceId);
+    const firstCity = cities.find((city) => city.provinceId === nextProvinceId);
+
+    if (firstCity) {
+      setCityId(firstCity.id);
+      setCitySearch(firstCity.name);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -149,30 +192,54 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
 
       <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
         <div className="grid gap-4 rounded-md border border-ink/10 bg-paper p-3">
-          <label className="grid gap-2">
-            <span className="text-sm font-black text-ink">Citta</span>
-            <span className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" size={17} aria-hidden="true" />
-              <input
-                className="h-12 w-full rounded-md border border-ink/10 bg-white pl-10 pr-3 text-base"
-                value={citySearch}
-                onChange={(event) => setCitySearch(event.target.value)}
-                placeholder="Cerca comune, es. Milano"
-              />
-            </span>
-          </label>
-          <select
-            className="h-12 rounded-md border border-ink/10 bg-white px-3 text-base"
-            value={cityId}
-            onChange={(event) => handleCitySelect(Number(event.target.value))}
-            required
-          >
+          <div className="grid gap-3 md:grid-cols-[0.9fr_1.1fr]">
+            <label className="grid gap-2">
+              <span className="text-sm font-black text-ink">Provincia</span>
+              <span className="relative">
+                <MapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-petrol" size={17} aria-hidden="true" />
+                <select
+                  className="h-12 w-full rounded-md border border-ink/10 bg-white pl-10 pr-3 text-base font-bold"
+                  value={provinceId}
+                  onChange={(event) => handleProvinceSelect(Number(event.target.value))}
+                >
+                  {provinces.map((province) => (
+                    <option key={province.id} value={province.id}>
+                      {province.name}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-black text-ink">Comune</span>
+              <span className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" size={17} aria-hidden="true" />
+                <input
+                  className="h-12 w-full rounded-md border border-ink/10 bg-white pl-10 pr-3 text-base"
+                  value={citySearch}
+                  onChange={(event) => setCitySearch(event.target.value)}
+                  placeholder="Cerca comune, es. Milano"
+                />
+              </span>
+            </label>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {filteredCities.map((city) => (
-              <option key={city.id} value={city.id}>
-                {city.name} - {city.provinceName}
-              </option>
+              <button
+                key={city.id}
+                type="button"
+                className={`shrink-0 rounded-md border px-3 py-2 text-left text-sm font-black transition ${
+                  city.id === cityId ? "border-petrol bg-petrol text-white" : "border-ink/10 bg-white text-ink hover:border-petrol/35"
+                }`}
+                onClick={() => handleCitySelect(city.id)}
+              >
+                {city.name}
+                <span className={`block text-xs font-bold ${city.id === cityId ? "text-white/76" : "text-ink/50"}`}>{city.provinceName}</span>
+              </button>
             ))}
-          </select>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -233,29 +300,62 @@ export function PriceReportForm({ cities, initialCity, stations }: PriceReportFo
           </fieldset>
         </div>
 
-        <label className="grid gap-2">
-          <span className="flex items-center justify-between gap-3 text-sm font-black text-ink">
-            Distributore
-            {isLoadingStations ? <span className="font-bold text-ink/50">Carico...</span> : null}
-          </span>
-          <select
-            className="h-12 rounded-md border border-ink/10 bg-white px-3 text-base disabled:bg-ink/[0.04]"
-            value={stationId}
-            onChange={(event) => setStationId(Number(event.target.value))}
-            disabled={isLoadingStations || availableStations.length === 0}
-            required
-          >
-            {availableStations.map((station) => (
-              <option key={station.id} value={station.id}>
-                {station.brand} - {station.name}, {station.address}
-              </option>
-            ))}
-          </select>
+        <div className="grid gap-3 rounded-md border border-ink/10 bg-paper p-3">
+          <label className="grid gap-2">
+            <span className="flex items-center justify-between gap-3 text-sm font-black text-ink">
+              Benzinaio
+              {isLoadingStations ? <span className="font-bold text-ink/50">Carico...</span> : <span className="font-bold text-ink/50">{availableStations.length} trovati</span>}
+            </span>
+            <span className="relative">
+              <Store className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-petrol" size={17} aria-hidden="true" />
+              <input
+                className="h-12 w-full rounded-md border border-ink/10 bg-white pl-10 pr-3 text-base disabled:bg-ink/[0.04]"
+                value={stationSearch}
+                onChange={(event) => setStationSearch(event.target.value)}
+                disabled={isLoadingStations || availableStations.length === 0}
+                placeholder="Cerca per nome, marca o indirizzo"
+              />
+            </span>
+          </label>
+
+          <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
+            {isLoadingStations ? (
+              Array.from({ length: 3 }, (_, index) => (
+                <div key={index} className="h-16 animate-pulse rounded-md bg-white/80" />
+              ))
+            ) : (
+              filteredStations.map((station) => (
+                <button
+                  key={station.id}
+                  type="button"
+                  className={`rounded-md border bg-white p-3 text-left transition ${
+                    station.id === stationId ? "border-petrol ring-2 ring-petrol/12" : "border-ink/10 hover:border-petrol/35"
+                  }`}
+                  onClick={() => setStationId(station.id)}
+                >
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block truncate font-black text-ink">{station.brand} - {station.name}</span>
+                      <span className="mt-1 block text-sm text-ink/62">{station.address}</span>
+                      <span className="mt-1 block text-xs font-bold text-petrol">{station.cityName}</span>
+                    </span>
+                    <span className={`grid size-5 shrink-0 place-items-center rounded-full border ${station.id === stationId ? "border-petrol bg-petrol" : "border-ink/20"}`}>
+                      {station.id === stationId ? <span className="size-2 rounded-full bg-white" /> : null}
+                    </span>
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+
           {stationError ? <span className="text-sm font-bold text-tomato">{stationError}</span> : null}
           {!isLoadingStations && availableStations.length === 0 && !stationError ? (
             <span className="text-sm font-bold text-ink/58">Nessun distributore trovato per questa citta e carburante.</span>
           ) : null}
-        </label>
+          {!isLoadingStations && availableStations.length > 0 && filteredStations.length === 0 ? (
+            <span className="text-sm font-bold text-ink/58">Nessun distributore corrisponde alla ricerca.</span>
+          ) : null}
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-2">
