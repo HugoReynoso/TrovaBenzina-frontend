@@ -14,7 +14,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: article?.title ?? "Notizia",
     description: article?.excerpt,
-    alternates: { canonical: `/notizie/${slug}` }
+    alternates: { canonical: `/notizie/${slug}` },
+    openGraph: {
+      title: article?.title ?? "Notizia TrovaBenzina",
+      description: article?.excerpt,
+      url: `/notizie/${slug}`,
+      type: "article"
+    }
   };
 }
 

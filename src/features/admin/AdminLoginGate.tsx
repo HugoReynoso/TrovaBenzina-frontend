@@ -120,9 +120,6 @@ export function AdminLoginGate() {
         </button>
       </form>
 
-      <p className="mt-5 rounded-md bg-ink/[0.035] p-3 text-xs text-ink/62">
-        Credenziali locali: admin@trovabenzina.it / trova-admin. La sessione usa un token temporaneo di accesso.
-      </p>
     </section>
   );
 }

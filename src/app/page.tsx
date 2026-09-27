@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HomeExperience } from "@/features/stations/HomeExperience";
@@ -6,6 +7,18 @@ import { getProvinces } from "@/lib/api/provinces";
 import { getPriceHistory } from "@/lib/api/statistics";
 import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
+
+export const metadata: Metadata = {
+  title: "Prezzi Benzina, Diesel, GPL e Metano Vicino a Te",
+  description:
+    "Confronta i prezzi carburante vicino a te o per provincia, trova i distributori piu economici sulla mappa e risparmia sul pieno.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "TrovaBenzina - Prezzi carburante vicino a te",
+    description: "Mappa dei distributori economici con filtri per provincia, carburante e modalita self o servito.",
+    url: "/"
+  }
+};
 
 export default async function HomePage() {
   const [cities, provinces] = await Promise.all([getCities(), getProvinces()]);

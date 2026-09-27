@@ -18,8 +18,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const resolvedCity = await getCityBySlug(city);
   return {
     title: `Prezzo Diesel ${resolvedCity?.name ?? city} Oggi - Distributori piu Economici`,
-    description: `Confronta il prezzo diesel a ${resolvedCity?.name ?? city} e trova i distributori piu convenienti.`,
-    alternates: { canonical: `/prezzo-diesel/${city}` }
+    description: `Prezzo diesel a ${resolvedCity?.name ?? city} oggi: confronta distributori economici, self service e prezzi aggiornati.`,
+    alternates: { canonical: `/prezzo-diesel/${city}` },
+    openGraph: {
+      title: `Prezzo diesel a ${resolvedCity?.name ?? city} oggi`,
+      description: `Mappa distributori e prezzi diesel aggiornati per ${resolvedCity?.name ?? city}.`,
+      url: `/prezzo-diesel/${city}`,
+      type: "website"
+    }
   };
 }
 

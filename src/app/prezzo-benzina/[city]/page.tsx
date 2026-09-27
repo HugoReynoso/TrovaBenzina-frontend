@@ -20,11 +20,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `Prezzo Benzina ${cityName} Oggi - Distributori piu Economici`,
-    description: `Consulta i prezzi della benzina a ${cityName}, trova i distributori piu economici sulla mappa e confronta benzina, diesel e GPL.`,
+    description: `Prezzo benzina a ${cityName} oggi: confronta distributori economici, self service e prezzi carburante aggiornati sulla mappa.`,
     alternates: { canonical: `/prezzo-benzina/${citySlug}` },
     openGraph: {
       title: `Prezzo benzina a ${cityName} oggi`,
-      description: `Mappa e prezzi benzina aggiornati per ${cityName}.`
+      description: `Mappa distributori e prezzi benzina aggiornati per ${cityName}.`,
+      url: `/prezzo-benzina/${citySlug}`,
+      type: "website"
     }
   };
 }

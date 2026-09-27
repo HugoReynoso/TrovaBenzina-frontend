@@ -18,8 +18,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const resolvedCity = await getCityBySlug(city);
   return {
     title: `Prezzo GPL ${resolvedCity?.name ?? city} Oggi - Distributori piu Economici`,
-    description: `Confronta il prezzo GPL a ${resolvedCity?.name ?? city} e trova i distributori piu convenienti.`,
-    alternates: { canonical: `/prezzo-gpl/${city}` }
+    description: `Prezzo GPL a ${resolvedCity?.name ?? city} oggi: confronta distributori economici e prezzi aggiornati sulla mappa.`,
+    alternates: { canonical: `/prezzo-gpl/${city}` },
+    openGraph: {
+      title: `Prezzo GPL a ${resolvedCity?.name ?? city} oggi`,
+      description: `Mappa distributori e prezzi GPL aggiornati per ${resolvedCity?.name ?? city}.`,
+      url: `/prezzo-gpl/${city}`,
+      type: "website"
+    }
   };
 }
 
