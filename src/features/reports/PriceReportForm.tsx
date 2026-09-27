@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, MapPin, Search, Send, Store } from "lucide-react";
 import { createPriceReport } from "@/lib/api/reports";
 import { getStations } from "@/lib/api/stations";
@@ -73,6 +73,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
   const [error, setError] = useState("");
   const [stationError, setStationError] = useState("");
   const [priceError, setPriceError] = useState("");
+  const stationListRef = useRef<HTMLDivElement>(null);
 
   const selectedStation = useMemo(
     () => availableStations.find((station) => station.id === stationId) ?? availableStations[0],
@@ -117,6 +118,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
     const querySelfService = params.get("selfService");
     const queryCityId = Number(params.get("cityId"));
     const queryStationId = Number(params.get("stationId"));
+    const queryPrice = params.get("price");
 
     if (queryFuelType && FUEL_TYPES.some((fuel) => fuel.code === queryFuelType)) {
       setFuelTypeCode(queryFuelType as FuelTypeCode);
@@ -129,6 +131,12 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
     if (queryStationId) {
       setPreferredStationId(queryStationId);
       setStationId(queryStationId);
+    }
+
+    if (queryPrice) {
+      const normalizedPrice = normalizePriceInput(queryPrice);
+      setPrice(normalizedPrice);
+      setPriceError(normalizedPrice && parsePrice(normalizedPrice) === null ? "Controlla il prezzo prima di inviare." : "");
     }
 
     if (queryCityId) {
@@ -184,6 +192,15 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
       abortController.abort();
     };
   }, [cityId, fuelTypeCode, preferredStationId]);
+
+  useEffect(() => {
+    if (isLoadingStations || !stationId) {
+      return;
+    }
+
+    const selectedStationButton = stationListRef.current?.querySelector<HTMLButtonElement>(`[data-station-id="${stationId}"]`);
+    selectedStationButton?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [isLoadingStations, stationId, filteredStations]);
 
   function handleCitySelect(nextCityId: number) {
     const nextCity = cities.find((city) => city.id === nextCityId);
@@ -324,7 +341,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[0.9fr_1fr_1.1fr]">
           <label className="grid gap-2">
             <span className="text-sm font-black text-ink">Carburante</span>
             <select
@@ -370,13 +387,13 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
             </span>
           </label>
 
-          <fieldset className="grid gap-2">
+          <fieldset className="grid min-w-0 gap-2 md:col-span-2 lg:col-span-1">
             <legend className="text-sm font-black text-ink">Modalita</legend>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 aria-pressed={selfService}
-                className={`h-12 rounded-md border font-black ${selfService ? "border-mint bg-mint text-white" : "border-ink/10 bg-white"}`}
+                className={`h-12 min-w-0 rounded-md border px-2 text-sm font-black sm:text-base ${selfService ? "border-mint bg-mint text-white" : "border-ink/10 bg-white"}`}
                 onClick={() => setSelfService(true)}
               >
                 Self
@@ -384,7 +401,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
               <button
                 type="button"
                 aria-pressed={!selfService}
-                className={`h-12 rounded-md border font-black ${!selfService ? "border-mint bg-mint text-white" : "border-ink/10 bg-white"}`}
+                className={`h-12 min-w-0 rounded-md border px-2 text-sm font-black sm:text-base ${!selfService ? "border-mint bg-mint text-white" : "border-ink/10 bg-white"}`}
                 onClick={() => setSelfService(false)}
               >
                 Servito
@@ -411,7 +428,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
             </span>
           </label>
 
-          <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
+          <div ref={stationListRef} className="grid max-h-72 scroll-py-4 gap-2 overflow-y-auto pr-1">
             {isLoadingStations ? (
               Array.from({ length: 3 }, (_, index) => (
                 <div key={index} className="h-16 animate-pulse rounded-md bg-white/80" />
@@ -420,9 +437,10 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
               filteredStations.map((station) => (
                 <button
                   key={station.id}
+                  data-station-id={station.id}
                   type="button"
                   className={`rounded-md border bg-white p-3 text-left transition ${
-                    station.id === stationId ? "border-petrol ring-2 ring-petrol/12" : "border-ink/10 hover:border-petrol/35"
+                    station.id === stationId ? "border-petrol bg-petrol/5 ring-2 ring-petrol/18" : "border-ink/10 hover:border-petrol/35"
                   }`}
                   onClick={() => setStationId(station.id)}
                 >
@@ -431,6 +449,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
                       <span className="block truncate font-black text-ink">{station.brand} - {station.name}</span>
                       <span className="mt-1 block text-sm text-ink/62">{station.address}</span>
                       <span className="mt-1 block text-xs font-bold text-petrol">{station.cityName}</span>
+                      {station.id === stationId ? <span className="mt-2 inline-flex rounded-md bg-petrol px-2 py-1 text-xs font-black text-white">Selezionato</span> : null}
                     </span>
                     <span className={`grid size-5 shrink-0 place-items-center rounded-full border ${station.id === stationId ? "border-petrol bg-petrol" : "border-ink/20"}`}>
                       {station.id === stationId ? <span className="size-2 rounded-full bg-white" /> : null}

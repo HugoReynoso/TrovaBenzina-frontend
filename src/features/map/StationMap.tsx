@@ -213,7 +213,7 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
             return null;
           }
 
-          const reportHref = `/segnala-prezzo?stationId=${station.id}&cityId=${station.cityId}&fuelType=${fuelType}&selfService=${price.selfService}`;
+          const reportHref = `/segnala-prezzo?stationId=${station.id}&cityId=${station.cityId}&fuelType=${fuelType}&selfService=${price.selfService}&price=${price.price.toFixed(3)}`;
 
           return (
             <Marker
