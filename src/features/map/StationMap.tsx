@@ -146,7 +146,8 @@ function LocationControl({
         }
       },
       onFailure: (reason) => {
-        cancelLocateRef.current = null;
+        // Non azzeriamo cancelLocateRef: il GPS resta in ascolto e una posizione tardiva
+        // chiamera' comunque onSuccess (che toglie l'errore e sposta la mappa).
         updateStatus(reason);
       }
     });
