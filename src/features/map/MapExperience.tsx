@@ -6,6 +6,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
+import { geolocationErrorMessage, requestBrowserPosition } from "@/lib/geolocation";
 import { formatEuro, getStationPrice, sortStationsByPrice } from "@/lib/price";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -53,38 +54,6 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
     cities.find((city) => city.provinceId === province.id) ??
     fallbackCity
   );
-}
-
-function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
-      reject,
-      options
-    );
-  });
-}
-
-function geolocationErrorMessage(error: unknown): string {
-  const code = typeof error === "object" && error !== null && "code" in error ? Number((error as { code?: number }).code) : 0;
-
-  if (typeof window !== "undefined" && !window.isSecureContext && window.location.hostname !== "localhost") {
-    return "La posizione funziona solo su HTTPS. Apri il sito dal dominio sicuro e riprova.";
-  }
-
-  if (code === 1) {
-    return "Permesso posizione non attivo. Abilita la posizione nel browser e premi di nuovo Posizionami.";
-  }
-
-  if (code === 2) {
-    return "Posizione non disponibile in questo momento. Puoi scegliere una provincia e premere Trova.";
-  }
-
-  if (code === 3) {
-    return "La richiesta posizione e scaduta. Riprova tra qualche secondo o scegli una provincia.";
-  }
-
-  return "Non riesco a usare la tua posizione. Controlla i permessi del browser o scegli una provincia.";
 }
 
 export function MapExperience({ cities, provinces, initialCity, initialProvince, stations, statistic }: MapExperienceProps) {
@@ -155,18 +124,13 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
       return;
     }
 
-    setIsLoading(true);
     setError("");
 
     try {
-      const position = await readBrowserPosition({ enableHighAccuracy: false, maximumAge: 300000, timeout: 12000 }).catch(() =>
-        readBrowserPosition({ enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 })
-      );
+      const position = await requestBrowserPosition();
       handleUserPositionChange(position, true);
     } catch (positionError) {
-      setError(geolocationErrorMessage(positionError));
-    } finally {
-      setIsLoading(false);
+      setError(geolocationErrorMessage(positionError, "Posizionami"));
     }
   }
 
@@ -279,14 +243,6 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           className="h-[58dvh] min-h-[430px] overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
           showLocationControl={false}
         />
-        <button
-          type="button"
-          className="absolute bottom-4 left-1/2 z-[650] inline-flex -translate-x-1/2 items-center gap-2 rounded-md bg-ink px-4 py-3 text-sm font-black text-white shadow-soft transition hover:bg-petrol"
-          onClick={() => setSearchVersion((version) => version + 1)}
-        >
-          <Search size={16} aria-hidden="true" />
-          Trova
-        </button>
       </div>
 
       <aside className="flex min-h-0 flex-col border-t border-ink/10 bg-white lg:border-l lg:border-t-0" aria-labelledby="map-results-title">

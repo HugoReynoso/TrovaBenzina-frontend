@@ -15,6 +15,7 @@ import { StatsCards } from "@/features/statistics/StatsCards";
 import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
+import { geolocationErrorMessage, requestBrowserPosition } from "@/lib/geolocation";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { sortStationsByPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -65,43 +66,6 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
     cities.find((city) => city.provinceId === province.id) ??
     fallbackCity
   );
-}
-
-function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
-      },
-      reject,
-      options
-    );
-  });
-}
-
-function geolocationErrorMessage(error: unknown): string {
-  const code = typeof error === "object" && error !== null && "code" in error ? Number((error as { code?: number }).code) : 0;
-
-  if (typeof window !== "undefined" && !window.isSecureContext && window.location.hostname !== "localhost") {
-    return "La posizione funziona solo su HTTPS. Apri il sito dal dominio sicuro e riprova.";
-  }
-
-  if (code === 1) {
-    return "Permesso posizione non attivo. Abilita la posizione nel browser e premi di nuovo Usa la mia posizione.";
-  }
-
-  if (code === 2) {
-    return "Posizione non disponibile in questo momento. Puoi scegliere una provincia e premere Trova.";
-  }
-
-  if (code === 3) {
-    return "La richiesta posizione e scaduta. Riprova tra qualche secondo o scegli una provincia.";
-  }
-
-  return "Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.";
 }
 
 export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, showTitle = true }: HomeExperienceProps) {
@@ -180,22 +144,10 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       return;
     }
 
-    setIsLoading(true);
     setError("");
 
     try {
-      const position = await readBrowserPosition({
-        enableHighAccuracy: false,
-        maximumAge: 300000,
-        timeout: 12000
-      }).catch(() =>
-        readBrowserPosition({
-          enableHighAccuracy: true,
-          maximumAge: 60000,
-          timeout: 8000
-        })
-      );
-
+      const position = await requestBrowserPosition();
       handleUserPositionChange(position, true);
     } catch (positionError) {
       if (userPosition) {
@@ -204,9 +156,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
         return;
       }
 
-      setError(geolocationErrorMessage(positionError));
-    } finally {
-      setIsLoading(false);
+      setError(geolocationErrorMessage(positionError, "Usa la mia posizione"));
     }
   }
 
