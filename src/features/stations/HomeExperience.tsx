@@ -98,6 +98,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [locateRequestId, setLocateRequestId] = useState(0);
   const [error, setError] = useState("");
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const userSelectedProvinceRef = useRef(false);
@@ -168,8 +169,16 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       return;
     }
 
-    setIsLocating(true);
     setError("");
+
+    // Se la mappa e' visibile, usa esattamente lo stesso flusso del bottone "Posizione" sulla mappa.
+    if (visibleStations.length > 0) {
+      setLocateRequestId((requestId) => requestId + 1);
+      return;
+    }
+
+    // Mappa non montata (nessun distributore): leggi la posizione direttamente.
+    setIsLocating(true);
 
     try {
       const position = await readBrowserPosition({
@@ -194,6 +203,11 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
   function handleLocationStatusChange(status: "idle" | "loading" | "ready" | "unavailable") {
     setIsLocating(status === "loading");
+
+    if (status === "ready" || status === "unavailable") {
+      // Richiesta completata: azzera, cosi' se la mappa si rimonta non richiede di nuovo il GPS.
+      setLocateRequestId(0);
+    }
 
     if (status === "ready") {
       setError("");
@@ -331,7 +345,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               )}
               <button
                 type="button"
-                className="grid size-11 shrink-0 place-items-center rounded-md bg-petrol text-white shadow-sm transition hover:bg-[#104955] md:hidden"
+                className="grid size-11 shrink-0 place-items-center rounded-md bg-petrol text-white shadow-sm transition hover:bg-[#104955] lg:hidden"
                 aria-label="Usa la mia posizione"
                 onClick={requestUserPosition}
                 disabled={isLocating}
@@ -398,6 +412,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               serviceMode={serviceMode}
               averagePrice={currentStatistic.averagePrice}
               userPosition={isUsingUserPosition ? userPosition : null}
+              locateRequestId={locateRequestId}
               onLocationStatusChange={handleLocationStatusChange}
               onUserPositionChange={(position) => handleUserPositionChange(position, true)}
             />
