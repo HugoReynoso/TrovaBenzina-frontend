@@ -30,6 +30,8 @@ interface StationMapProps {
   onLocationStatusChange?: (status: LocationStatus) => void;
   className?: string;
   showLocationControl?: boolean;
+  /** Posizione verticale del bottone "Posizionami" (classi Tailwind top-*). */
+  locationControlClassName?: string;
 }
 
 function markerIcon(brand: string, price: number, averagePrice: number) {
@@ -111,8 +113,10 @@ function LocationControl({
   onLocationStatusChange,
   onUserPositionChange,
   userPosition,
-  locationLoading = false
+  locationLoading = false,
+  positionClassName = "top-[108px] sm:top-3"
 }: {
+  positionClassName?: string;
   locateRequestId?: number;
   onLocationStatusChange?: (status: LocationStatus) => void;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
@@ -170,7 +174,7 @@ function LocationControl({
     <>
       <button
         type="button"
-        className="absolute right-3 top-[108px] z-[500] inline-flex h-10 items-center gap-1.5 rounded-md border border-ink/10 bg-white/95 px-2.5 text-[11px] font-black text-ink shadow-soft backdrop-blur transition hover:bg-white sm:top-3 sm:gap-2 sm:px-3 sm:text-xs"
+        className={`absolute right-3 ${positionClassName} z-[500] inline-flex h-10 items-center gap-1.5 rounded-md border border-ink/10 bg-white/95 px-2.5 text-[11px] font-black text-ink shadow-soft backdrop-blur transition hover:bg-white sm:gap-2 sm:px-3 sm:text-xs`}
         aria-label="Trova la mia posizione sulla mappa"
         title="Trova la mia posizione"
         aria-busy={isBusy}
@@ -250,7 +254,8 @@ export function StationMap({
   locateRequestId,
   onLocationStatusChange,
   className,
-  showLocationControl = true
+  showLocationControl = true,
+  locationControlClassName
 }: StationMapProps) {
   const [zoom, setZoom] = useState(12);
   const precision = clusterPrecision(zoom);
@@ -273,6 +278,7 @@ export function StationMap({
             onUserPositionChange={onUserPositionChange}
             userPosition={userPosition}
             locationLoading={locationLoading}
+            positionClassName={locationControlClassName}
           />
         ) : null}
         {clusters.map((cluster) => {

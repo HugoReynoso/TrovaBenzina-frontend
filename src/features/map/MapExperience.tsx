@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Fuel, Navigation, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
+import { Fuel, Navigation, RefreshCw, Search } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
@@ -232,6 +232,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           userPosition={isUsingUserPosition ? userPosition : null}
           locationLoading={isUsingUserPosition && isLoading}
           onUserPositionChange={(position) => handleUserPositionChange(position, true)}
+          locationControlClassName="top-[118px] sm:top-3"
           className="map-experience__leaflet w-full min-w-0 overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
         />
       </div>
@@ -241,15 +242,11 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.08em] text-petrol">TrovaBenzina</p>
-              <h1 id="map-results-title" className="truncate text-lg font-black text-ink lg:text-xl">
+              <h1 id="map-results-title" className="text-lg font-black leading-tight text-ink lg:truncate lg:text-xl">
                 {listTitle}
               </h1>
             </div>
             <div className="flex shrink-0 gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-ink/[0.035] px-3 py-2 text-sm font-black text-ink">
-                Prezzo
-                <SlidersHorizontal size={15} aria-hidden="true" />
-              </span>
               <span className="rounded-md bg-ink/[0.035] px-3 py-2 text-sm font-black text-ink">Distributori ({orderedStations.length})</span>
             </div>
           </div>
@@ -342,7 +339,7 @@ function MapFilters({
         </select>
         <button
           type="button"
-          className="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-black text-white shadow-sm transition hover:bg-petrol sm:col-auto"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-black text-white shadow-sm transition hover:bg-petrol"
           aria-label="Trova distributori"
           title="Trova distributori"
           onClick={onRefresh}
