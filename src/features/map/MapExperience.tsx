@@ -6,7 +6,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { formatEuro, getStationPrice, sortStationsByPrice } from "@/lib/price";
+import { getStationPrice, sortStationsByPrice } from "@/lib/price";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import { FUEL_TYPES } from "@/types/fuel";
@@ -53,6 +53,15 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
     cities.find((city) => city.provinceId === province.id) ??
     fallbackCity
   );
+}
+
+function formatSavings(value: number): string {
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 export function MapExperience({ cities, provinces, initialCity, initialProvince, stations, statistic }: MapExperienceProps) {
@@ -221,6 +230,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           serviceMode={serviceMode}
           averagePrice={currentStatistic.averagePrice}
           userPosition={isUsingUserPosition ? userPosition : null}
+          locationLoading={isUsingUserPosition && isLoading}
           onUserPositionChange={(position) => handleUserPositionChange(position, true)}
           className="map-experience__leaflet w-full min-w-0 overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
         />
@@ -246,7 +256,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
         </div>
 
         <div className="bg-mint px-4 py-3 text-sm font-black uppercase tracking-[0.02em] text-white">
-          Risparmio: {formatEuro(savingOnTank)} su un pieno di 50L
+          Risparmio: {formatSavings(savingOnTank)} su un pieno di 50L
         </div>
 
         {error ? <p className="m-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}

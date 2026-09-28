@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect, useMemo, useState } from "react";
-import { LocateFixed, Navigation, PencilLine } from "lucide-react";
+import { LoaderCircle, LocateFixed, Navigation, PencilLine } from "lucide-react";
 import Link from "next/link";
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -21,6 +21,7 @@ interface StationMapProps {
   serviceMode: ServiceMode;
   averagePrice: number;
   userPosition?: { latitude: number; longitude: number } | null;
+  locationLoading?: boolean;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
   locateRequestId?: number;
   onLocationStatusChange?: (status: "idle" | "loading" | "ready" | "unavailable") => void;
@@ -106,12 +107,14 @@ function LocationControl({
   locateRequestId = 0,
   onLocationStatusChange,
   onUserPositionChange,
-  userPosition
+  userPosition,
+  locationLoading = false
 }: {
   locateRequestId?: number;
   onLocationStatusChange?: (status: "idle" | "loading" | "ready" | "unavailable") => void;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
   userPosition?: { latitude: number; longitude: number } | null;
+  locationLoading?: boolean;
 }) {
   const map = useMap();
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
@@ -161,20 +164,23 @@ function LocationControl({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locateRequestId]);
 
-  const label = status === "loading" ? "Cerco..." : status === "ready" ? "Posizione" : "Posizionami";
+  const isBusy = status === "loading" || locationLoading;
+  const label = isBusy ? "Cerco..." : status === "ready" ? "Posizione" : "Posizionami";
   const displayedPosition = userPosition ? { lat: userPosition.latitude, lng: userPosition.longitude } : position;
 
   return (
     <>
       <button
         type="button"
-        className="absolute right-3 top-3 z-[500] inline-flex h-10 items-center gap-2 rounded-md border border-ink/10 bg-white/95 px-3 text-xs font-black text-ink shadow-soft backdrop-blur transition hover:bg-white"
+        className="absolute right-3 top-[108px] z-[500] inline-flex h-10 items-center gap-1.5 rounded-md border border-ink/10 bg-white/95 px-2.5 text-[11px] font-black text-ink shadow-soft backdrop-blur transition hover:bg-white sm:top-3 sm:gap-2 sm:px-3 sm:text-xs"
         aria-label="Trova la mia posizione sulla mappa"
         title="Trova la mia posizione"
+        aria-busy={isBusy}
+        disabled={isBusy}
         onClick={() => requestPosition(true)}
       >
-        <LocateFixed size={16} aria-hidden="true" />
-        <span className="hidden sm:inline">{label}</span>
+        {isBusy ? <LoaderCircle className="animate-spin" size={16} aria-hidden="true" /> : <LocateFixed size={16} aria-hidden="true" />}
+        <span>{label}</span>
       </button>
       {displayedPosition ? (
         <CircleMarker
@@ -241,6 +247,7 @@ export function StationMap({
   serviceMode,
   averagePrice,
   userPosition,
+  locationLoading = false,
   onUserPositionChange,
   locateRequestId,
   onLocationStatusChange,
@@ -267,6 +274,7 @@ export function StationMap({
             onLocationStatusChange={onLocationStatusChange}
             onUserPositionChange={onUserPositionChange}
             userPosition={userPosition}
+            locationLoading={locationLoading}
           />
         ) : null}
         {clusters.map((cluster) => {
