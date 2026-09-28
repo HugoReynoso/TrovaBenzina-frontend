@@ -15,6 +15,9 @@ export function Footer() {
           <p className="mt-2">Mappe e dati cartografici: OpenStreetMap contributors.</p>
         </div>
         <nav aria-label="Link footer" className="flex flex-wrap items-center gap-x-4 gap-y-2 md:justify-end">
+          <Link className="hover:text-petrol hover:underline" href="/prezzi-carburanti">
+            Prezzi per città
+          </Link>
           <Link className="hover:text-petrol hover:underline" href="/privacy">
             Privacy
           </Link>

@@ -177,7 +177,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
         if (!abortController.signal.aborted) {
           setAvailableStations([]);
           setStationId(0);
-          setStationError(loadError instanceof Error ? loadError.message : "Impossibile caricare i distributori per questa citta.");
+          setStationError(loadError instanceof Error ? loadError.message : "Impossibile caricare i distributori per questa città.");
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -389,7 +389,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
           </label>
 
           <fieldset className="grid min-w-0 content-start gap-2 md:col-span-2 lg:col-span-1">
-            <legend className="flex min-h-5 items-center text-sm font-black text-ink">Modalita</legend>
+            <legend className="flex min-h-5 items-center text-sm font-black text-ink">Modalità</legend>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -464,7 +464,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
 
           {stationError ? <span className="text-sm font-bold text-tomato">{stationError}</span> : null}
           {!isLoadingStations && availableStations.length === 0 && !stationError ? (
-            <span className="text-sm font-bold text-ink/58">Nessun distributore trovato per questa citta e carburante.</span>
+            <span className="text-sm font-bold text-ink/58">Nessun distributore trovato per questa città e carburante.</span>
           ) : null}
           {!isLoadingStations && availableStations.length > 0 && filteredStations.length === 0 ? (
             <span className="text-sm font-bold text-ink/58">Nessun distributore corrisponde alla ricerca.</span>

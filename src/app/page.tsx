@@ -9,13 +9,13 @@ import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 
 export const metadata: Metadata = {
-  title: "Prezzi benzina, diesel e GPL vicino a te",
+  title: { absolute: "TrovaBenzina | Prezzo benzina oggi e distributori più economici" },
   description:
-    "Confronta i prezzi carburante per provincia, trova distributori convenienti sulla mappa e consulta le ultime comunicazioni prezzo disponibili.",
+    "Trova Benzina: confronta il prezzo di benzina, diesel e GPL oggi, trova il distributore più economico vicino a te sulla mappa e controlla la data dell'ultimo prezzo comunicato al MIMIT.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "TrovaBenzina - Prezzi benzina, diesel e GPL in Italia",
-    description: "Mappa dei distributori con filtri per provincia, carburante e modalita self o servito.",
+    title: "TrovaBenzina | Prezzo benzina oggi e distributori più economici",
+    description: "Trova Benzina: mappa dei distributori con prezzi di benzina, diesel e GPL, filtri per provincia e modalità self o servito.",
     url: "/"
   }
 };
@@ -30,7 +30,7 @@ export default async function HomePage() {
   return (
     <>
       <Header />
-      <HomeExperience cities={cities} provinces={provinces} initialCity={city} initialProvince={province} stations={stations} statistic={statistic} />
+      <HomeExperience pageTitle="TrovaBenzina: prezzo benzina oggi e distributori più economici" cities={cities} provinces={provinces} initialCity={city} initialProvince={province} stations={stations} statistic={statistic} />
       <section className="mx-auto grid max-w-7xl gap-4 px-4 pb-10 md:px-6" aria-labelledby="come-funziona">
         <div className="grid gap-4 rounded-md border border-ink/10 bg-white p-4 shadow-sm md:grid-cols-[1.2fr_0.8fr]">
           <div className="grid gap-3">
@@ -45,9 +45,14 @@ export default async function HomePage() {
           <nav className="flex flex-wrap content-start gap-2" aria-label="Pagine prezzi principali">
             {[
               { href: "/prezzo-benzina/milano", label: "Prezzo benzina Milano" },
+              { href: "/prezzo-benzina/roma", label: "Prezzo benzina Roma" },
+              { href: "/prezzo-benzina/torino", label: "Prezzo benzina Torino" },
+              { href: "/prezzo-benzina/napoli", label: "Prezzo benzina Napoli" },
+              { href: "/prezzo-benzina/bologna", label: "Prezzo benzina Bologna" },
+              { href: "/prezzo-benzina/firenze", label: "Prezzo benzina Firenze" },
               { href: "/prezzo-diesel/milano", label: "Prezzo diesel Milano" },
-              { href: "/prezzo-gpl/milano", label: "Prezzo GPL Milano" },
-              { href: "/prezzo-benzina/roma", label: "Prezzo benzina Roma" }
+              { href: "/prezzo-gpl/roma", label: "Prezzo GPL Roma" },
+              { href: "/prezzi-carburanti", label: "Tutte le città →" }
             ].map((link) => (
               <Link key={link.href} className="rounded-md border border-petrol/20 px-3 py-2 text-sm font-black text-petrol hover:border-petrol/45" href={link.href}>
                 {link.label}

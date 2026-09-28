@@ -37,8 +37,8 @@ export default function AccisePage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <h1 className="text-3xl font-black text-ink">Accise benzina</h1>
         <p className="max-w-3xl text-ink/70">
-          Qui trovi la versione meno fumosa possibile: il prezzo del carburante cambia, l&apos;accisa e una tassa fissa per unita di carburante, mentre
-          l&apos;IVA e la parte percentuale applicata sull&apos;imponibile.
+          Qui trovi la versione meno fumosa possibile: il prezzo del carburante cambia, l&apos;accisa è una tassa fissa per unità di carburante, mentre
+          l&apos;IVA è la parte percentuale applicata sull&apos;imponibile.
         </p>
         <FuelComposition detailed />
         <section className="grid gap-3 rounded-md border border-ink/10 bg-white p-4 shadow-sm md:grid-cols-3" aria-labelledby="accise-dettagli">
@@ -50,7 +50,7 @@ export default function AccisePage() {
           <article className="rounded-md bg-ink/[0.035] p-4">
             <p className="font-black text-ink">Accisa: importo fisso</p>
             <p className="mt-2 text-sm text-ink/66">
-              Non e una fetta percentuale del prezzo: viene applicata come importo fisso per unita di carburante.
+              Non è una fetta percentuale del prezzo: viene applicata come importo fisso per unità di carburante.
             </p>
           </article>
           <article className="rounded-md bg-ink/[0.035] p-4">

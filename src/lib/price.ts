@@ -93,3 +93,12 @@ export function filterRecentStations(
     return price ? isPriceRecent(price, referenceTime, maxAgeDays) : false;
   });
 }
+
+/** "27 settembre 2026": data dell'ultimo prezzo comunicato nei dati, o null se non c'e'. */
+export function formatLatestUpdate(stations: Station[]): string | null {
+  const latest = latestCommunicationTime(stations);
+  if (!latest) {
+    return null;
+  }
+  return new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Rome" }).format(new Date(latest));
+}

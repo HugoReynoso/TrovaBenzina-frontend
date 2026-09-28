@@ -7,7 +7,7 @@ import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import type { LocationStatus, StationFocusRequest } from "@/features/map/StationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { filterRecentStations, getStationPrice, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
+import { filterRecentStations, formatLatestUpdate, getStationPrice, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
 import { useNow } from "@/lib/useNow";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -148,6 +148,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
       setLocationError(LOCATION_UNAVAILABLE_MESSAGE);
     }
   }
+  const latestUpdate = useMemo(() => formatLatestUpdate(visibleStations), [visibleStations]);
   const cheapestPrice = orderedStations.map((station) => getStationPrice(station, fuelType, serviceMode)?.price).find(Boolean);
   const savingOnTank = cheapestPrice ? Math.max(0, (currentStatistic.averagePrice - cheapestPrice) * 50) : 0;
 
@@ -300,6 +301,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
               <h1 id="map-results-title" className="text-lg font-black leading-tight text-ink lg:truncate lg:text-xl">
                 {listTitle}
               </h1>
+              {latestUpdate ? <p className="mt-0.5 text-xs font-bold text-ink/58">Prezzi aggiornati al {latestUpdate}</p> : null}
             </div>
             <div className="flex shrink-0 gap-2">
               <span className="rounded-md bg-ink/[0.035] px-3 py-2 text-sm font-black text-ink">Distributori ({orderedStations.length})</span>
@@ -394,7 +396,7 @@ function MapFilters({
           className="h-11 w-full min-w-0 rounded-md border border-ink/15 bg-white/96 px-3 text-sm font-black text-ink shadow-sm outline-none sm:w-auto"
           value={serviceMode}
           onChange={(event) => onServiceModeChange(event.target.value as ServiceMode)}
-          aria-label="Scegli modalita prezzo"
+          aria-label="Scegli modalità prezzo"
         >
           <option value="self">Self</option>
           <option value="served">Servito</option>

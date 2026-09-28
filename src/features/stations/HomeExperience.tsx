@@ -18,7 +18,7 @@ import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { locateUser } from "@/lib/geolocation";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
-import { filterRecentStations, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
+import { filterRecentStations, formatLatestUpdate, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
 import { useNow } from "@/lib/useNow";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City, Province } from "@/types/location";
@@ -33,6 +33,8 @@ interface HomeExperienceProps {
   stations: Station[];
   statistic: CityFuelStatistic;
   showTitle?: boolean;
+  /** Titolo principale (H1) fisso della pagina; se assente l'H1 e' "Prezzo ... in provincia di ...". */
+  pageTitle?: string;
 }
 
 interface LoadedCityData {
@@ -74,7 +76,7 @@ const LOCATION_DENIED_MESSAGE =
 const LOCATION_UNAVAILABLE_MESSAGE =
   "Non riesco a trovare la tua posizione in questo momento. Riprova tra qualche secondo oppure scegli una provincia.";
 
-export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, showTitle = true }: HomeExperienceProps) {
+export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, showTitle = true, pageTitle }: HomeExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
   const [provinceId, setProvinceId] = useState(initialProvince.id);
@@ -105,8 +107,8 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const selectedCityId = selectedCity.id;
   const isUsingUserPosition = Boolean(userPosition) && !userSelectedProvinceRef.current;
   const rankingTitle = isUsingUserPosition
-    ? "Top 5 piu economici intorno a te"
-    : `Top 5 piu economici in provincia di ${selectedProvince.name}`;
+    ? "Top 5 più economici intorno a te"
+    : `Top 5 più economici in provincia di ${selectedProvince.name}`;
   // Top 5: solo prezzi comunicati negli ultimi 4 giorni. Prima dell'idratazione usiamo come
   // riferimento la comunicazione piu' recente nei dati, cosi' server e browser mostrano la stessa lista.
   const cheapest = useMemo(() => {
@@ -131,6 +133,8 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       }
     }
   }
+
+  const latestUpdate = useMemo(() => formatLatestUpdate(visibleStations), [visibleStations]);
 
   const quickProvinces = useMemo(
     () =>
@@ -340,9 +344,18 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             <div className="flex items-start justify-between gap-3">
               {showTitle ? (
                 <div className="min-w-0">
-                  <h1 className="text-xl font-black leading-tight text-ink md:text-4xl">
-                    Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
-                  </h1>
+                  {pageTitle ? (
+                    <>
+                      <h1 className="text-xl font-black leading-tight text-ink md:text-4xl">{pageTitle}</h1>
+                      <p className="mt-1 text-sm font-bold text-ink/62 md:text-base">
+                        Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
+                      </p>
+                    </>
+                  ) : (
+                    <h1 className="text-xl font-black leading-tight text-ink md:text-4xl">
+                      Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
+                    </h1>
+                  )}
                 </div>
               ) : (
                 <p className="min-w-0 text-sm font-black uppercase tracking-[0.08em] text-ink/56">Filtra prezzi e distributori</p>
@@ -403,6 +416,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-ink/62">
               <span className="rounded-md bg-petrol/8 px-2 py-1 text-petrol">{isUsingUserPosition ? "Intorno a te" : selectedProvince.name}</span>
               <span className="rounded-md bg-amber/20 px-2 py-1">{visibleStations.length} distributori</span>
+              {latestUpdate ? <span className="rounded-md bg-ink/[0.045] px-2 py-1">Prezzi aggiornati al {latestUpdate}</span> : null}
               <span className="rounded-md bg-mint/12 px-2 py-1 text-mint">{serviceMode === "self" ? "Self service" : serviceMode === "served" ? "Servito" : "Miglior prezzo"}</span>
             </div>
             {error ? <p className="rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
@@ -446,7 +460,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                   <Trophy size={20} aria-hidden="true" />
                   {rankingTitle}
                 </span>
-                <span className="mt-1 block text-xs font-bold text-ink/62">Prezzi ordinati dal piu conveniente</span>
+                <span className="mt-1 block text-xs font-bold text-ink/62">Prezzi ordinati dal più conveniente</span>
               </span>
               <span className="grid size-9 shrink-0 place-items-center rounded-md bg-amber text-ink">
                 {mobileRankingOpen ? <ChevronUp size={20} aria-hidden="true" /> : <ChevronDown size={20} aria-hidden="true" />}

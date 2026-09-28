@@ -2,21 +2,21 @@ import type { NewsArticle } from "@/types/news";
 
 export const mockNews: NewsArticle[] = [
   {
-    title: "Prezzi carburanti: perche cambiano anche nella stessa citta",
+    title: "Prezzi carburanti: perché cambiano anche nella stessa città",
     slug: "perche-prezzi-carburanti-cambiano",
-    excerpt: "Costi logistici, aggiornamenti MIMIT e modalita self o servito spiegano differenze anche a pochi chilometri.",
+    excerpt: "Costi logistici, aggiornamenti MIMIT e modalità self o servito spiegano differenze anche a pochi chilometri.",
     date: "2026-09-18",
     category: "Guide",
     image: "/news/prezzi-carburanti.svg",
     content: [
       "I prezzi dei carburanti possono variare tra distributori vicini per politiche commerciali, costi operativi e tempi di aggiornamento.",
-      "TrovaBenzina mostrera sempre la data di comunicazione del prezzo, cosi puoi capire quanto e recente l'informazione."
+      "TrovaBenzina mostrerà sempre la data di comunicazione del prezzo, così puoi capire quanto è recente l'informazione."
     ],
     relatedLinks: [
       {
         href: "/prezzo-benzina/milano",
         label: "Prezzo benzina a Milano",
-        description: "Confronta i distributori della provincia e trova il pieno piu conveniente."
+        description: "Confronta i distributori della provincia e trova il pieno più conveniente."
       },
       {
         href: "/prezzo-diesel/roma",
@@ -26,19 +26,19 @@ export const mockNews: NewsArticle[] = [
       {
         href: "/notizie/self-servito-differenze",
         label: "Self o servito",
-        description: "Capire la modalita giusta aiuta a confrontare prezzi omogenei."
+        description: "Capire la modalità giusta aiuta a confrontare prezzi omogenei."
       }
     ]
   },
   {
     title: "Self o servito: cosa controllare prima di fare pieno",
     slug: "self-servito-differenze",
-    excerpt: "La differenza di prezzo non e sempre piccola: il filtro giusto evita sorprese al momento del rifornimento.",
+    excerpt: "La differenza di prezzo non è sempre piccola: il filtro giusto evita sorprese al momento del rifornimento.",
     date: "2026-09-15",
     category: "Risparmio",
     image: "/news/self-servito.svg",
     content: [
-      "La modalita self service di solito costa meno del servito, ma non tutti i distributori offrono entrambe le opzioni.",
+      "La modalità self service di solito costa meno del servito, ma non tutti i distributori offrono entrambe le opzioni.",
       "Confrontare prezzi omogenei e fondamentale: benzina self con benzina self, diesel servito con diesel servito."
     ],
     relatedLinks: [
@@ -50,17 +50,17 @@ export const mockNews: NewsArticle[] = [
       {
         href: "/prezzo-gpl/milano",
         label: "Prezzo GPL a Milano",
-        description: "Per GPL e metano la modalita disponibile puo cambiare molto da impianto a impianto."
+        description: "Per GPL e metano la modalità disponibile può cambiare molto da impianto a impianto."
       },
       {
         href: "/notizie/perche-prezzi-carburanti-cambiano",
-        label: "Perche i prezzi cambiano",
+        label: "Perché i prezzi cambiano",
         description: "Le differenze tra distributori vicini non dipendono solo dalla distanza."
       }
     ]
   },
   {
-    title: "Accise e IVA: com'e composto il prezzo alla pompa",
+    title: "Accise e IVA: com'è composto il prezzo alla pompa",
     slug: "accise-iva-prezzo-pompa",
     excerpt: "Una panoramica semplice delle voci principali che formano il prezzo finale pagato dall'automobilista.",
     date: "2026-09-10",
@@ -68,7 +68,7 @@ export const mockNews: NewsArticle[] = [
     image: "/news/accise-iva.svg",
     content: [
       "Il prezzo finale include materia prima, distribuzione, margini, accise e IVA.",
-      "I valori di dettaglio richiedono fonti aggiornate e verificate: questa sezione e gia pronta per dati ufficiali."
+      "I valori di dettaglio richiedono fonti aggiornate e verificate: questa sezione è già pronta per dati ufficiali."
     ],
     relatedLinks: [
       {
@@ -84,7 +84,7 @@ export const mockNews: NewsArticle[] = [
       {
         href: "/notizie/self-servito-differenze",
         label: "Self o servito",
-        description: "La modalita incide sul prezzo che paghi davvero."
+        description: "La modalità incide sul prezzo che paghi davvero."
       }
     ]
   }

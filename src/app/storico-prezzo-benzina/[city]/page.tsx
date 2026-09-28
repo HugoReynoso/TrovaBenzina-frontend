@@ -75,7 +75,7 @@ export default async function HistoryPage({ params }: PageProps) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <h1 className="text-3xl font-black text-ink">Storico prezzo benzina a {city.name}</h1>
         <p className="max-w-3xl text-ink/70">
-          Andamento del prezzo benzina calcolato da TrovaBenzina. Stiamo lavorando per rendere lo storico sempre piu completo.
+          Andamento del prezzo benzina calcolato da TrovaBenzina. Stiamo lavorando per rendere lo storico sempre più completo.
         </p>
         <PriceHistoryChart points={history} fallbackStatistic={statistic} />
       </main>

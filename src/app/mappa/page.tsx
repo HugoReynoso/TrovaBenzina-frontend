@@ -9,7 +9,7 @@ import { buildCityFuelStatistic } from "@/lib/statistics";
 export const metadata: Metadata = {
   title: "Mappa distributori carburante",
   description:
-    "Consulta la mappa distributori TrovaBenzina con filtri per provincia, carburante e modalita prezzo. Lista completa ordinata dal prezzo piu economico.",
+    "Consulta la mappa distributori TrovaBenzina con filtri per provincia, carburante e modalità prezzo. Lista completa ordinata dal prezzo più economico.",
   alternates: { canonical: "/mappa" },
   openGraph: {
     title: "Mappa distributori carburante | TrovaBenzina",

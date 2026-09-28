@@ -29,7 +29,7 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
     <section aria-labelledby="piu-economici" className="rounded-md border border-ink/10 bg-white p-3 shadow-sm md:p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 id="piu-economici" className="text-lg font-black leading-tight text-ink md:text-xl">
-          {title ?? `Piu economici${cityName ? ` (${cityName})` : ""}`}
+          {title ?? `Più economici${cityName ? ` (${cityName})` : ""}`}
         </h2>
         <span className="rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">Top {stations.length}</span>
       </div>

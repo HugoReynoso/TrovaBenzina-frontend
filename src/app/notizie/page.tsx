@@ -51,7 +51,7 @@ export default function NewsPage() {
           <p className="text-sm font-black uppercase tracking-[0.08em] text-amber">Guide TrovaBenzina</p>
           <h1 className="text-3xl font-black text-ink">Notizie carburanti</h1>
           <p className="max-w-3xl text-ink/68">
-            Approfondimenti pratici su prezzo benzina, diesel, GPL, accise e risparmio alla pompa, con collegamenti alle mappe prezzi piu consultate.
+            Approfondimenti pratici su prezzo benzina, diesel, GPL, accise e risparmio alla pompa, con collegamenti alle mappe prezzi più consultate.
           </p>
           <nav className="flex flex-wrap gap-2" aria-label="Guide carburante principali">
             {[

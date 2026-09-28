@@ -89,7 +89,7 @@ export function AdminDashboard({ initialReports, logs, token, loading, onReports
           </div>
         </div>
         <p className="mt-3 max-w-3xl text-ink/68">
-          Le segnalazioni degli utenti non pubblicano prezzi finche non vengono approvate.
+          Le segnalazioni degli utenti non pubblicano prezzi finché non vengono approvate.
         </p>
         {loading ? <p className="mt-3 rounded-md bg-ink/[0.035] p-3 text-sm font-bold text-ink/64">Caricamento dati admin...</p> : null}
         {error ? <p className="mt-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}

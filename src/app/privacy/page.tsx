@@ -20,7 +20,7 @@ export default function PrivacyPage() {
         <section className="grid gap-2">
           <h2 className="text-xl font-black text-ink">Dati trattati</h2>
           <p>
-            Il form di segnalazione prezzo puo raccogliere prezzo, distributore, carburante, modalita self o servito, note e,
+            Il form di segnalazione prezzo può raccogliere prezzo, distributore, carburante, modalità self o servito, note e,
             solo se forniti volontariamente, nome ed email.
           </p>
         </section>

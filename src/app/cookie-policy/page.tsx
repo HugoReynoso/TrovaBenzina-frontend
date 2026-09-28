@@ -21,14 +21,14 @@ export default function CookiePolicyPage() {
         <section className="grid gap-2">
           <h2 className="text-xl font-black text-ink">Strumenti tecnici</h2>
           <p>
-            Il sito puo usare strumenti tecnici del browser, come session storage per la demo dell&apos;area admin e parametri URL per la
+            Il sito può usare strumenti tecnici del browser, come session storage per la demo dell&apos;area admin e parametri URL per la
             lingua selezionata. Sono funzionali all&apos;uso del sito e non servono a profilare l&apos;utente.
           </p>
         </section>
         <section className="grid gap-2">
           <h2 className="text-xl font-black text-ink">Quando servira un banner</h2>
           <p>
-            Se in futuro verranno aggiunti analytics non anonimizzati, pubblicita, remarketing o altri strumenti di tracciamento non
+            Se in futuro verranno aggiunti analytics non anonimizzati, pubblicità, remarketing o altri strumenti di tracciamento non
             tecnici, andra introdotto un banner consenso con gestione granulare delle preferenze.
           </p>
         </section>

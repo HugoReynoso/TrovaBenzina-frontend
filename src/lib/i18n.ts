@@ -1,8 +1,8 @@
 export const SUPPORTED_LOCALES = [
   { code: "it", label: "Italiano", shortLabel: "IT" },
   { code: "en", label: "English", shortLabel: "EN" },
-  { code: "es", label: "Espanol", shortLabel: "ES" },
-  { code: "fr", label: "Francais", shortLabel: "FR" },
+  { code: "es", label: "Español", shortLabel: "ES" },
+  { code: "fr", label: "Français", shortLabel: "FR" },
   { code: "de", label: "Deutsch", shortLabel: "DE" }
 ] as const;
 

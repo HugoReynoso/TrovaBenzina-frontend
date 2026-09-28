@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { RouteLoadingIndicator } from "@/components/RouteLoadingIndicator";
-import { alternateLanguages } from "@/lib/i18n";
 import { defaultOgImage, siteName, siteUrl } from "@/lib/seo";
 import "./globals.css";
 
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
     template: `%s | ${siteName}`
   },
   description:
-    "Confronta i prezzi di benzina, diesel e GPL nei distributori italiani. Trova i distributori piu economici, consulta la mappa e verifica la data dell'ultimo prezzo comunicato.",
+    "Confronta i prezzi di benzina, diesel e GPL nei distributori italiani. Trova i distributori più economici, consulta la mappa e verifica la data dell'ultimo prezzo comunicato.",
   authors: [{ name: siteName, url: siteUrl }],
   creator: siteName,
   publisher: siteName,
@@ -20,10 +19,6 @@ export const metadata: Metadata = {
     telephone: false,
     address: false,
     email: false
-  },
-  alternates: {
-    canonical: "/",
-    languages: alternateLanguages
   },
   openGraph: {
     title: "TrovaBenzina | Prezzi carburante in Italia",
@@ -59,6 +54,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: siteName,
+      alternateName: ["Trova Benzina", "trovabenzina.it"],
       description: "Trova distributori economici e confronta i prezzi carburante in Italia.",
       url: siteUrl,
       inLanguage: "it-IT",
@@ -72,6 +68,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       "@context": "https://schema.org",
       "@type": "Organization",
       name: siteName,
+      alternateName: "Trova Benzina",
       url: siteUrl,
       logo: `${siteUrl}/brand/trovabenzina-logo.svg`
     }

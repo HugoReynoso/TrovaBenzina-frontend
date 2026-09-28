@@ -16,7 +16,7 @@ interface ServiceModeSelectorProps {
 export function ServiceModeSelector({ value, onChange }: ServiceModeSelectorProps) {
   return (
     <fieldset className="grid gap-1.5">
-      <span className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">Modalita</span>
+      <span className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">Modalità</span>
       <div className="grid grid-cols-3 rounded-md border border-ink/10 bg-white p-1 shadow-sm">
         {options.map((option) => (
           <button
