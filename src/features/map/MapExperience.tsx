@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Fuel, Navigation, RefreshCw, Search } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
-import type { LocationStatus } from "@/features/map/StationMap";
+import type { LocationStatus, StationFocusRequest } from "@/features/map/StationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { getStationPrice, sortStationsByPrice } from "@/lib/price";
+import { filterRecentStations, getStationPrice, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
+import { useNow } from "@/lib/useNow";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import { FUEL_TYPES } from "@/types/fuel";
@@ -97,12 +98,40 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   const isUsingUserPosition = Boolean(userPosition) && !userSelectedProvinceRef.current;
   const listTitle = isUsingUserPosition ? "Distributori vicino a te" : `Distributori in provincia di ${selectedProvince.name}`;
 
-  const orderedStations = useMemo(
+  const now = useNow();
+  const [focusRequest, setFocusRequest] = useState<StationFocusRequest | null>(null);
+  const mapCanvasRef = useRef<HTMLDivElement>(null);
+
+  // Sulla mappa: tutti i distributori con un prezzo per il carburante scelto.
+  const mapStations = useMemo(
     () =>
       sortStationsByPrice(visibleStations, fuelType, serviceMode).filter((station) => getStationPrice(station, fuelType, serviceMode)),
     [fuelType, serviceMode, visibleStations]
   );
-  const mapStations = orderedStations;
+  // Nella lista "top": solo prezzi comunicati negli ultimi 4 giorni. Prima dell'idratazione usiamo
+  // come riferimento la comunicazione piu' recente nei dati (stesso risultato su server e browser).
+  const orderedStations = useMemo(
+    () => filterRecentStations(mapStations, fuelType, serviceMode, now ?? latestCommunicationTime(mapStations)),
+    [fuelType, mapStations, now, serviceMode]
+  );
+
+  function handleSelectStation(station: Station) {
+    setFocusRequest({
+      stationId: station.id,
+      latitude: station.latitude,
+      longitude: station.longitude,
+      requestId: Date.now()
+    });
+
+    // Sul telefono la lista e' sotto la mappa: riporta la mappa in vista.
+    const mapCanvas = mapCanvasRef.current;
+    if (mapCanvas) {
+      const rect = mapCanvas.getBoundingClientRect();
+      if (rect.top < 0 || rect.bottom > window.innerHeight) {
+        mapCanvas.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }
 
   // Quando cambiano i risultati (nuova provincia, "Posizionami", filtri) riporta la lista in cima,
   // altrimenti resta scorsa dove si trovava e la nuova "top" dei prezzi non si vede.
@@ -232,7 +261,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
 
   return (
     <section className="grid min-h-[calc(100dvh-65px)] min-w-0 bg-[#eef2ee] lg:h-[calc(100dvh-65px)] lg:grid-cols-[minmax(0,1fr)_460px] lg:overflow-hidden">
-      <div className="relative min-w-0 map-experience__canvas lg:min-h-0">
+      <div ref={mapCanvasRef} className="relative min-w-0 scroll-mt-16 map-experience__canvas lg:min-h-0">
         <MapFilters
           fuelType={fuelType}
           isLoading={isLoading}
@@ -257,6 +286,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           locationLoading={isUsingUserPosition && isLoading}
           onUserPositionChange={(position) => handleUserPositionChange(position, true)}
           onLocationStatusChange={handleLocationStatusChange}
+          focusRequest={focusRequest}
           locationControlClassName="top-[118px] sm:top-3"
           className="map-experience__leaflet w-full min-w-0 overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
         />
@@ -287,11 +317,18 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
         <ol ref={stationListRef} className="map-station-carousel flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-3 py-3 lg:grid lg:flex-1 lg:auto-rows-min lg:gap-0 lg:overflow-x-hidden lg:overflow-y-auto lg:px-0 lg:py-0">
           {orderedStations.length > 0 ? (
             orderedStations.map((station, index) => (
-              <MapStationCard key={station.id} station={station} index={index} fuelType={fuelType} serviceMode={serviceMode} />
+              <MapStationCard
+                key={station.id}
+                station={station}
+                index={index}
+                fuelType={fuelType}
+                serviceMode={serviceMode}
+                onSelect={handleSelectStation}
+              />
             ))
           ) : (
             <li className="min-w-[82vw] rounded-md border border-dashed border-ink/20 bg-white p-5 text-sm font-bold text-ink/66 lg:m-4 lg:min-w-0">
-              Nessun distributore trovato con questi filtri.
+              Nessun distributore con prezzo aggiornato negli ultimi 4 giorni con questi filtri.
             </li>
           )}
         </ol>
@@ -382,18 +419,31 @@ function MapFilters({
 function MapStationCard({
   fuelType,
   index,
+  onSelect,
   serviceMode,
   station
 }: {
   fuelType: FuelTypeCode;
   index: number;
+  onSelect: (station: Station) => void;
   serviceMode: ServiceMode;
   station: Station;
 }) {
   const price = getStationPrice(station, fuelType, serviceMode);
 
   return (
-    <li className="map-station-carousel__item w-[min(82vw,360px)] min-w-0 shrink-0 snap-center border border-ink/10 bg-white p-4 shadow-sm lg:w-auto lg:shrink lg:snap-none lg:border-x-0 lg:border-t-0 lg:shadow-none">
+    <li
+      className="map-station-carousel__item w-[min(82vw,360px)] min-w-0 shrink-0 cursor-pointer snap-center border border-ink/10 bg-white p-4 shadow-sm transition hover:bg-petrol/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-petrol lg:w-auto lg:shrink lg:snap-none lg:border-x-0 lg:border-t-0 lg:shadow-none"
+      onClick={() => onSelect(station)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(station);
+        }
+      }}
+      tabIndex={0}
+      title="Mostra sulla mappa"
+    >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.08em] text-petrol">#{index + 1}</p>
@@ -416,6 +466,7 @@ function MapStationCard({
           rel="noreferrer"
           aria-label={`Avvia il percorso per ${station.name} su Google Maps`}
           title="Apri il percorso su Google Maps"
+          onClick={(event) => event.stopPropagation()}
         >
           <Navigation size={20} aria-hidden="true" />
         </a>

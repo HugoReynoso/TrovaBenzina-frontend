@@ -17,6 +17,14 @@ import type { Station } from "@/types/station";
 
 export type LocationStatus = "idle" | "loading" | "ready" | "unavailable" | "denied";
 
+/** Richiesta di centrare la mappa su un distributore (requestId cambia ad ogni clic). */
+export interface StationFocusRequest {
+  stationId: number;
+  latitude: number;
+  longitude: number;
+  requestId: number;
+}
+
 interface StationMapProps {
   city: City;
   stations: Station[];
@@ -32,6 +40,8 @@ interface StationMapProps {
   showLocationControl?: boolean;
   /** Posizione verticale del bottone "Posizionami" (classi Tailwind top-*). */
   locationControlClassName?: string;
+  /** Quando cambia, la mappa vola sul distributore e ne apre la scheda. */
+  focusRequest?: StationFocusRequest | null;
 }
 
 function markerIcon(brand: string, price: number, averagePrice: number) {
@@ -255,9 +265,11 @@ export function StationMap({
   onLocationStatusChange,
   className,
   showLocationControl = true,
-  locationControlClassName
+  locationControlClassName,
+  focusRequest
 }: StationMapProps) {
   const [zoom, setZoom] = useState(12);
+  const markerRefs = useRef(new Map<number, L.Marker>());
   const precision = clusterPrecision(zoom);
   const clusters = useMemo(() => buildClusters(stations, precision), [precision, stations]);
 
@@ -271,6 +283,7 @@ export function StationMap({
         <ZoomTracker onZoomChange={setZoom} />
         <MapSizeObserver />
         <CityMapController city={city} userPosition={userPosition} />
+        <StationFocusController focusRequest={focusRequest} markerRefs={markerRefs} />
         {showLocationControl ? (
           <LocationControl
             locateRequestId={locateRequestId}
@@ -302,6 +315,13 @@ export function StationMap({
           return (
             <Marker
               key={cluster.id}
+              ref={(marker) => {
+                if (marker) {
+                  markerRefs.current.set(station.id, marker);
+                } else {
+                  markerRefs.current.delete(station.id);
+                }
+              }}
               position={[station.latitude, station.longitude]}
               icon={markerIcon(station.brand, price.price, averagePrice)}
             >
@@ -353,6 +373,66 @@ export function StationMap({
       </MapContainer>
     </div>
   );
+}
+
+const FOCUS_ZOOM = 16;
+
+function StationFocusController({
+  focusRequest,
+  markerRefs
+}: {
+  focusRequest?: StationFocusRequest | null;
+  markerRefs: { current: Map<number, L.Marker> };
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!focusRequest) {
+      return;
+    }
+
+    let cancelled = false;
+    let retryTimer = 0;
+
+    // Dopo lo zoom i cluster si separano e il marker del distributore viene creato:
+    // riproviamo per qualche istante finche' non esiste, poi apriamo la sua scheda.
+    const openPopup = (attempt = 0) => {
+      if (cancelled) {
+        return;
+      }
+      const marker = markerRefs.current.get(focusRequest.stationId);
+      if (marker) {
+        marker.openPopup();
+        return;
+      }
+      if (attempt < 20) {
+        retryTimer = window.setTimeout(() => openPopup(attempt + 1), 100);
+      }
+    };
+
+    let opened = false;
+    const handleMoveEnd = () => {
+      if (!opened) {
+        opened = true;
+        openPopup();
+      }
+    };
+    map.once("moveend", handleMoveEnd);
+    // Sicurezza: se la mappa era gia' li' e "moveend" non arriva, apriamo comunque la scheda.
+    const fallbackTimer = window.setTimeout(handleMoveEnd, 1500);
+    map.flyTo([focusRequest.latitude, focusRequest.longitude], Math.max(map.getZoom(), FOCUS_ZOOM), { duration: 0.8 });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(retryTimer);
+      window.clearTimeout(fallbackTimer);
+      map.off("moveend", handleMoveEnd);
+    };
+    // Reagiamo solo a una nuova richiesta (requestId), non ad ogni render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRequest?.requestId, map]);
+
+  return null;
 }
 
 function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {

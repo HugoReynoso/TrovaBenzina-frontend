@@ -12,13 +12,15 @@ interface CheapestStationsProps {
   serviceMode: ServiceMode;
   cityName?: string;
   title?: string;
+  /** Clic su un distributore: la pagina centra la mappa su di lui. */
+  onSelectStation?: (station: Station) => void;
 }
 
-export function CheapestStations({ stations, fuelType, serviceMode, cityName, title }: CheapestStationsProps) {
+export function CheapestStations({ stations, fuelType, serviceMode, cityName, title, onSelectStation }: CheapestStationsProps) {
   if (stations.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-ink/20 bg-white p-5 text-sm text-ink/70">
-        Nessun distributore trovato con questi filtri.
+        Nessun prezzo aggiornato negli ultimi 4 giorni con questi filtri.
       </div>
     );
   }
@@ -35,7 +37,25 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
         {stations.map((station, index) => {
           const price = getStationPrice(station, fuelType, serviceMode);
           return (
-            <li key={station.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-md bg-ink/[0.035] p-2.5 md:grid-cols-[auto_auto_1fr_auto] md:gap-3 md:p-3">
+            <li
+              key={station.id}
+              className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-md bg-ink/[0.035] p-2.5 md:grid-cols-[auto_auto_1fr_auto] md:gap-3 md:p-3 ${
+                onSelectStation ? "cursor-pointer transition hover:bg-petrol/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-petrol" : ""
+              }`}
+              onClick={onSelectStation ? () => onSelectStation(station) : undefined}
+              onKeyDown={
+                onSelectStation
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelectStation(station);
+                      }
+                    }
+                  : undefined
+              }
+              tabIndex={onSelectStation ? 0 : undefined}
+              title={onSelectStation ? "Mostra sulla mappa" : undefined}
+            >
               <span className="grid size-7 place-items-center rounded-md bg-white text-xs font-black text-ink shadow-sm md:size-8 md:text-sm">
                 {index + 1}
               </span>
@@ -55,6 +75,7 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
                   href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={(event) => event.stopPropagation()}
                 >
                   <Navigation size={13} aria-hidden="true" />
                   Naviga

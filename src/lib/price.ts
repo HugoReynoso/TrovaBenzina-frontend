@@ -52,3 +52,44 @@ export function sortStationsByPrice(
     return leftPrice - rightPrice;
   });
 }
+
+/** I prezzi comunicati da piu' di questi giorni non compaiono nelle liste "top". */
+export const MAX_PRICE_AGE_DAYS = 4;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function isPriceRecent(price: StationPrice, referenceTime: number, maxAgeDays = MAX_PRICE_AGE_DAYS): boolean {
+  const communicatedAt = Date.parse(price.communicatedAt);
+  return Number.isFinite(communicatedAt) && referenceTime - communicatedAt <= maxAgeDays * DAY_MS;
+}
+
+/** Data della comunicazione piu' recente presente nei dati (usata come riferimento stabile prima dell'idratazione). */
+export function latestCommunicationTime(stations: Station[]): number {
+  let latest = 0;
+  for (const station of stations) {
+    for (const price of station.prices) {
+      const time = Date.parse(price.communicatedAt);
+      if (Number.isFinite(time) && time > latest) {
+        latest = time;
+      }
+    }
+  }
+  return latest;
+}
+
+/**
+ * Tiene solo i distributori il cui prezzo (per carburante e modalita scelti) e' stato
+ * comunicato negli ultimi MAX_PRICE_AGE_DAYS giorni rispetto a `referenceTime`.
+ */
+export function filterRecentStations(
+  stations: Station[],
+  fuelType: FuelTypeCode,
+  serviceMode: ServiceMode,
+  referenceTime: number,
+  maxAgeDays = MAX_PRICE_AGE_DAYS
+): Station[] {
+  return stations.filter((station) => {
+    const price = getStationPrice(station, fuelType, serviceMode);
+    return price ? isPriceRecent(price, referenceTime, maxAgeDays) : false;
+  });
+}

@@ -8,7 +8,7 @@ import { FuelSelector } from "@/features/filters/FuelSelector";
 import { ProvinceSelector } from "@/features/filters/ProvinceSelector";
 import { ServiceModeSelector } from "@/features/filters/ServiceModeSelector";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
-import type { LocationStatus } from "@/features/map/StationMap";
+import type { LocationStatus, StationFocusRequest } from "@/features/map/StationMap";
 import { CheapestStations } from "@/features/stations/CheapestStations";
 import { CitySummary } from "@/features/statistics/CitySummary";
 import { FuelComposition } from "@/features/statistics/FuelComposition";
@@ -18,7 +18,8 @@ import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { locateUser } from "@/lib/geolocation";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
-import { sortStationsByPrice } from "@/lib/price";
+import { filterRecentStations, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
+import { useNow } from "@/lib/useNow";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City, Province } from "@/types/location";
 import type { Station } from "@/types/station";
@@ -36,7 +37,6 @@ interface HomeExperienceProps {
 
 interface LoadedCityData {
   stations: Station[];
-  cheapest: Station[];
   statistic: CityFuelStatistic;
 }
 
@@ -81,13 +81,15 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const [searchVersion, setSearchVersion] = useState(0);
   const [mobileRankingOpen, setMobileRankingOpen] = useState(true);
   const [visibleStations, setVisibleStations] = useState(stations);
-  const [cheapest, setCheapest] = useState(() => sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5));
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [locateRequestId, setLocateRequestId] = useState(0);
   const [error, setError] = useState("");
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
+  const [focusRequest, setFocusRequest] = useState<StationFocusRequest | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement>(null);
+  const now = useNow();
   const userSelectedProvinceRef = useRef(false);
   const dataCacheRef = useRef(new Map<string, LoadedCityData>());
   const loadedKeyRef = useRef(`province:${initialProvince.id}:BENZINA:self:0`);
@@ -105,6 +107,31 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const rankingTitle = isUsingUserPosition
     ? "Top 5 piu economici intorno a te"
     : `Top 5 piu economici in provincia di ${selectedProvince.name}`;
+  // Top 5: solo prezzi comunicati negli ultimi 4 giorni. Prima dell'idratazione usiamo come
+  // riferimento la comunicazione piu' recente nei dati, cosi' server e browser mostrano la stessa lista.
+  const cheapest = useMemo(() => {
+    const referenceTime = now ?? latestCommunicationTime(visibleStations);
+    return sortStationsByPrice(filterRecentStations(visibleStations, fuelType, serviceMode, referenceTime), fuelType, serviceMode).slice(0, 5);
+  }, [fuelType, now, serviceMode, visibleStations]);
+
+  function handleSelectStation(station: Station) {
+    setFocusRequest({
+      stationId: station.id,
+      latitude: station.latitude,
+      longitude: station.longitude,
+      requestId: Date.now()
+    });
+
+    // Sul telefono la top e' sotto la mappa: scorri fino alla mappa se non e' visibile.
+    const mapSection = mapSectionRef.current;
+    if (mapSection) {
+      const rect = mapSection.getBoundingClientRect();
+      if (rect.top < 0 || rect.bottom > window.innerHeight) {
+        mapSection.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }
+
   const quickProvinces = useMemo(
     () =>
       quickProvinceNames
@@ -116,7 +143,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   useEffect(() => {
     dataCacheRef.current.set(`province:${initialProvince.id}:BENZINA:self:0`, {
       stations,
-      cheapest: sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5),
       statistic
     });
   }, [initialProvince.id, statistic, stations]);
@@ -226,7 +252,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     const cachedData = dataCacheRef.current.get(requestKey);
     if (cachedData) {
       setVisibleStations(cachedData.stations);
-      setCheapest(cachedData.cheapest);
       setCurrentStatistic(cachedData.statistic);
       setError("");
       loadedKeyRef.current = requestKey;
@@ -272,7 +297,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
         const nextStations = stationsResult.status === "fulfilled" ? stationsResult.value : [];
         const nextData = {
           stations: nextStations,
-          cheapest: sortStationsByPrice(nextStations, fuelType, serviceMode).slice(0, 5),
           statistic: nextStations.length > 0
             ? buildCityFuelStatistic(selectedCity, fuelType, nextStations)
             : statisticResult.status === "fulfilled"
@@ -283,7 +307,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
         dataCacheRef.current.set(requestKey, nextData);
         loadedKeyRef.current = requestKey;
         setVisibleStations(nextData.stations);
-        setCheapest(nextData.cheapest);
         setCurrentStatistic(nextData.statistic);
 
         if (stationsResult.status === "rejected") {
@@ -292,7 +315,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       } catch (loadError) {
         if (!abortController.signal.aborted) {
           setVisibleStations([]);
-          setCheapest([]);
           setError(loadError instanceof Error ? loadError.message : "Impossibile caricare i dati in questo momento.");
         }
       } finally {
@@ -386,6 +408,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             {error ? <p className="rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
           </div>
 
+          <div ref={mapSectionRef} className="scroll-mt-20">
           {visibleStations.length > 0 ? (
             <DynamicStationMap
               city={selectedCity}
@@ -397,6 +420,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               locateRequestId={locateRequestId}
               onLocationStatusChange={handleLocationStatusChange}
               onUserPositionChange={(position) => handleUserPositionChange(position, true)}
+              focusRequest={focusRequest}
             />
           ) : (
             <div className="grid h-[52vh] min-h-[360px] place-items-center rounded-md border border-dashed border-ink/20 bg-white text-center shadow-sm">
@@ -408,6 +432,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               </div>
             </div>
           )}
+          </div>
 
           <section className="rounded-md border border-ink/10 bg-white p-3 shadow-sm md:hidden" aria-labelledby="mobile-top-5">
             <button
@@ -429,7 +454,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             </button>
             {mobileRankingOpen ? (
               <div className="mt-4 border-t border-ink/10 pt-4">
-                <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} title={rankingTitle} />
+                <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} title={rankingTitle} onSelectStation={handleSelectStation} />
               </div>
             ) : null}
           </section>
@@ -444,7 +469,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
         <aside className="hidden grid-cols-1 gap-4 lg:grid">
           <StatsCards statistic={currentStatistic} compact />
-          <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} title={rankingTitle} />
+          <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} title={rankingTitle} onSelectStation={handleSelectStation} />
         </aside>
       </section>
 
