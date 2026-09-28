@@ -201,34 +201,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   }, [cities]);
 
   useEffect(() => {
-    if (!navigator.geolocation || cities.length === 0) {
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (userSelectedProvinceRef.current) {
-          return;
-        }
-
-        const currentPosition = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        };
-        handleUserPositionChange(currentPosition);
-      },
-      () => {
-        setProvinceId(initialProvince.id);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 300000,
-        timeout: 7000
-      }
-    );
-  }, [cities, handleUserPositionChange, initialProvince.id]);
-
-  useEffect(() => {
     const shouldUseUserPosition = isUsingUserPosition;
     const requestKey = shouldUseUserPosition
       ? `nearby:${userPosition?.latitude.toFixed(4)}:${userPosition?.longitude.toFixed(4)}:${fuelType}:${serviceMode}:${searchVersion}`

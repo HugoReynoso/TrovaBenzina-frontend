@@ -9,19 +9,8 @@ interface ProvinceSelectorProps {
   onChange: (provinceId: number) => void;
 }
 
-const priorityProvinceCodes = ["MI", "RM", "NA", "TO", "BO", "FI", "GE", "PA", "VE", "VR", "BA", "CT"];
-
 export function ProvinceSelector({ provinces, value, onChange }: ProvinceSelectorProps) {
-  const sortedProvinces = [...provinces].sort((left, right) => {
-    const leftPriority = priorityProvinceCodes.indexOf(left.code);
-    const rightPriority = priorityProvinceCodes.indexOf(right.code);
-
-    if (leftPriority !== -1 || rightPriority !== -1) {
-      return (leftPriority === -1 ? 999 : leftPriority) - (rightPriority === -1 ? 999 : rightPriority);
-    }
-
-    return left.name.localeCompare(right.name, "it");
-  });
+  const sortedProvinces = [...provinces].sort((left, right) => left.name.localeCompare(right.name, "it"));
 
   return (
     <label className="grid gap-1.5">
