@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Fuel, Heart, Map as MapIcon, RefreshCw, Route, Search, SlidersHorizontal } from "lucide-react";
+import { Fuel, Navigation, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
@@ -198,8 +198,8 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   }, [fuelType, isUsingUserPosition, searchVersion, selectedCity, selectedProvince.id, serviceMode, userPosition]);
 
   return (
-    <section className="grid min-h-[calc(100dvh-65px)] bg-[#eef2ee] lg:h-[calc(100dvh-65px)] lg:grid-cols-[minmax(0,1fr)_460px] lg:overflow-hidden">
-      <div className="relative min-h-[58dvh] lg:min-h-0">
+    <section className="grid min-h-[calc(100dvh-65px)] min-w-0 bg-[#eef2ee] lg:h-[calc(100dvh-65px)] lg:grid-cols-[minmax(0,1fr)_460px] lg:overflow-hidden">
+      <div className="relative min-w-0 map-experience__canvas lg:min-h-0">
         <MapFilters
           fuelType={fuelType}
           isLoading={isLoading}
@@ -222,11 +222,11 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           averagePrice={currentStatistic.averagePrice}
           userPosition={isUsingUserPosition ? userPosition : null}
           onUserPositionChange={(position) => handleUserPositionChange(position, true)}
-          className="h-[58dvh] min-h-[430px] overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
+          className="map-experience__leaflet w-full min-w-0 overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
         />
       </div>
 
-      <aside className="flex min-h-0 flex-col border-t border-ink/10 bg-white lg:border-l lg:border-t-0" aria-labelledby="map-results-title">
+      <aside className="flex min-h-0 min-w-0 flex-col border-t border-ink/10 bg-white lg:border-l lg:border-t-0" aria-labelledby="map-results-title">
         <div className="border-b border-ink/10 bg-white p-3 lg:p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -251,7 +251,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
 
         {error ? <p className="m-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
 
-        <ol className="flex gap-3 overflow-x-auto px-3 py-3 lg:grid lg:flex-1 lg:auto-rows-min lg:gap-0 lg:overflow-y-auto lg:px-0 lg:py-0">
+        <ol className="map-station-carousel flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-3 py-3 lg:grid lg:flex-1 lg:auto-rows-min lg:gap-0 lg:overflow-x-hidden lg:overflow-y-auto lg:px-0 lg:py-0">
           {orderedStations.length > 0 ? (
             orderedStations.map((station, index) => (
               <MapStationCard key={station.id} station={station} index={index} fuelType={fuelType} serviceMode={serviceMode} />
@@ -292,11 +292,11 @@ function MapFilters({
 
   return (
     <div className="absolute left-3 right-3 top-3 z-[650] grid max-w-3xl gap-2 sm:left-4 sm:right-auto sm:w-[min(720px,calc(100%-2rem))]">
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <label className="relative">
           <Fuel className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-petrol" size={16} aria-hidden="true" />
           <select
-            className="h-11 appearance-none rounded-md border border-ink/15 bg-white/96 px-9 pr-8 text-sm font-black text-ink shadow-sm outline-none"
+            className="h-11 w-full min-w-0 appearance-none rounded-md border border-ink/15 bg-white/96 px-9 pr-8 text-sm font-black text-ink shadow-sm outline-none sm:w-auto"
             value={fuelType}
             onChange={(event) => onFuelChange(event.target.value as FuelTypeCode)}
             aria-label="Scegli carburante"
@@ -309,7 +309,7 @@ function MapFilters({
           </select>
         </label>
         <select
-          className="h-11 rounded-md border border-ink/15 bg-white/96 px-3 text-sm font-black text-ink shadow-sm outline-none"
+          className="h-11 w-full min-w-0 truncate rounded-md border border-ink/15 bg-white/96 px-3 text-sm font-black text-ink shadow-sm outline-none sm:w-auto"
           value={selectedProvinceId}
           onChange={(event) => onProvinceChange(Number(event.target.value))}
           aria-label="Scegli provincia"
@@ -321,7 +321,7 @@ function MapFilters({
           ))}
         </select>
         <select
-          className="h-11 rounded-md border border-ink/15 bg-white/96 px-3 text-sm font-black text-ink shadow-sm outline-none"
+          className="h-11 w-full min-w-0 rounded-md border border-ink/15 bg-white/96 px-3 text-sm font-black text-ink shadow-sm outline-none sm:w-auto"
           value={serviceMode}
           onChange={(event) => onServiceModeChange(event.target.value as ServiceMode)}
           aria-label="Scegli modalita prezzo"
@@ -332,15 +332,7 @@ function MapFilters({
         </select>
         <button
           type="button"
-          className="grid size-11 place-items-center rounded-md border border-ink/15 bg-white/96 text-tomato shadow-sm transition hover:border-tomato/45"
-          aria-label="Preferiti"
-          title="Preferiti"
-        >
-          <Heart size={21} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className="inline-flex h-11 items-center gap-2 rounded-md bg-ink px-4 text-sm font-black text-white shadow-sm transition hover:bg-petrol"
+          className="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-black text-white shadow-sm transition hover:bg-petrol sm:col-auto"
           aria-label="Trova distributori"
           title="Trova distributori"
           onClick={onRefresh}
@@ -368,7 +360,7 @@ function MapStationCard({
   const price = getStationPrice(station, fuelType, serviceMode);
 
   return (
-    <li className="min-w-[82vw] border border-ink/10 bg-white p-4 shadow-sm lg:min-w-0 lg:border-x-0 lg:border-t-0 lg:shadow-none">
+    <li className="map-station-carousel__item w-[min(82vw,360px)] min-w-0 shrink-0 snap-center border border-ink/10 bg-white p-4 shadow-sm lg:w-auto lg:shrink lg:snap-none lg:border-x-0 lg:border-t-0 lg:shadow-none">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.08em] text-petrol">#{index + 1}</p>
@@ -384,29 +376,16 @@ function MapStationCard({
         {station.distanceKm ? <span className="rounded-md bg-ink/[0.045] px-2 py-1 text-xs font-bold text-ink/62">{station.distanceKm.toFixed(1)} km</span> : null}
       </div>
       <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="flex gap-2">
-          <a
-            className="grid size-10 place-items-center rounded-md bg-[#0b5ca8] text-white transition hover:bg-petrol"
-            href={`https://www.google.com/maps/search/?api=1&query=${station.latitude},${station.longitude}`}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Apri ${station.name} su Google Maps`}
-          >
-            <MapIcon size={20} aria-hidden="true" />
-          </a>
-          <a
-            className="grid size-10 place-items-center rounded-md border border-[#0b5ca8] text-[#0b5ca8] transition hover:bg-petrol/8"
-            href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Naviga verso ${station.name}`}
-          >
-            <Route size={20} aria-hidden="true" />
-          </a>
-          <button className="grid size-10 place-items-center rounded-md text-tomato transition hover:bg-tomato/8" type="button" aria-label="Aggiungi ai preferiti">
-            <Heart size={22} aria-hidden="true" />
-          </button>
-        </div>
+        <a
+          className="grid size-10 place-items-center rounded-md bg-[#0b5ca8] text-white transition hover:bg-[#084b89] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0b5ca8]"
+          href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Avvia il percorso per ${station.name} su Google Maps`}
+          title="Apri il percorso su Google Maps"
+        >
+          <Navigation size={20} aria-hidden="true" />
+        </a>
         <p className="rounded-md bg-mint px-3 py-2 text-xl font-black leading-none text-white shadow-sm">
           {price ? price.price.toFixed(3) : "-"}
           <span className="ml-1 text-xs">€/L</span>

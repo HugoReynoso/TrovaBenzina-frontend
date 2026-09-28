@@ -204,6 +204,36 @@ function CityMapController({ city, userPosition }: { city: City; userPosition?: 
   return null;
 }
 
+function MapSizeObserver() {
+  const map = useMap();
+
+  useEffect(() => {
+    let frame = 0;
+    const invalidateSize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+    };
+    const container = map.getContainer();
+    const observer = new ResizeObserver(invalidateSize);
+
+    observer.observe(container);
+    window.addEventListener("resize", invalidateSize);
+    window.addEventListener("orientationchange", invalidateSize);
+    invalidateSize();
+    const settleTimer = window.setTimeout(invalidateSize, 250);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(settleTimer);
+      observer.disconnect();
+      window.removeEventListener("resize", invalidateSize);
+      window.removeEventListener("orientationchange", invalidateSize);
+    };
+  }, [map]);
+
+  return null;
+}
+
 export function StationMap({
   city,
   stations,
@@ -229,6 +259,7 @@ export function StationMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ZoomTracker onZoomChange={setZoom} />
+        <MapSizeObserver />
         <CityMapController city={city} userPosition={userPosition} />
         {showLocationControl ? (
           <LocationControl
