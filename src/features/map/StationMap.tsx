@@ -100,7 +100,6 @@ function buildClusters(stations: Station[], precision: number | null): StationCl
 
 function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (position: { latitude: number; longitude: number }) => void }) {
   const map = useMap();
-  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
 
   function requestPosition(focusMap = true) {
@@ -116,7 +115,6 @@ function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (pos
           lat: location.coords.latitude,
           lng: location.coords.longitude
         };
-        setPosition(nextPosition);
         setStatus("ready");
 
         if (focusMap) {
@@ -154,15 +152,6 @@ function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (pos
         <LocateFixed size={16} aria-hidden="true" />
         <span className="hidden sm:inline">{label}</span>
       </button>
-      {position ? (
-        <CircleMarker
-          center={[position.lat, position.lng]}
-          pathOptions={{ color: "#165A67", fillColor: "#1F9D68", fillOpacity: 0.28, weight: 3 }}
-          radius={12}
-        >
-          <Popup>Sei qui</Popup>
-        </CircleMarker>
-      ) : null}
     </>
   );
 }
@@ -197,6 +186,15 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
         <ZoomTracker onZoomChange={setZoom} />
         <CityMapController city={city} userPosition={userPosition} />
         <LocationControl onUserPositionChange={onUserPositionChange} />
+        {userPosition ? (
+          <CircleMarker
+            center={[userPosition.latitude, userPosition.longitude]}
+            pathOptions={{ color: "#165A67", fillColor: "#1F9D68", fillOpacity: 0.28, weight: 3 }}
+            radius={12}
+          >
+            <Popup>Sei qui</Popup>
+          </CircleMarker>
+        ) : null}
         {clusters.map((cluster) => {
           if (cluster.stations.length > 1) {
             return (

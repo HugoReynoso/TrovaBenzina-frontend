@@ -157,10 +157,10 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
         })
       );
 
-      handleUserPositionChange(position);
+      handleUserPositionChange(position, true);
     } catch {
       if (userPosition) {
-        handleUserPositionChange(userPosition);
+        handleUserPositionChange(userPosition, true);
         setError("");
         return;
       }
@@ -171,7 +171,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     }
   }
 
-  const handleUserPositionChange = useCallback((nextPosition: UserPosition) => {
+  const handleUserPositionChange = useCallback((nextPosition: UserPosition, forceRefresh = false) => {
     userSelectedProvinceRef.current = false;
     setUserPosition(nextPosition);
 
@@ -179,6 +179,9 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       distanceKm(nextPosition, city) < distanceKm(nextPosition, nearest) ? city : nearest
     );
     setProvinceId(nearestCity.provinceId);
+    if (forceRefresh) {
+      setSearchVersion((version) => version + 1);
+    }
   }, [cities]);
 
   useEffect(() => {
@@ -240,8 +243,10 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
           shouldUseUserPosition && userPosition
             ? getNearbyStations(
                 {
-                  city: selectedCity.name,
-                  province: selectedProvince.code,
+                  lat: userPosition.latitude,
+                  lng: userPosition.longitude,
+                  fuelType,
+                  serviceMode,
                   limit: 800
                 },
                 { signal: abortController.signal }
@@ -301,7 +306,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     return () => {
       abortController.abort();
     };
-  }, [fuelType, isUsingUserPosition, searchVersion, selectedCity, selectedCityId, selectedProvince.code, selectedProvince.id, serviceMode, userPosition]);
+  }, [fuelType, isUsingUserPosition, searchVersion, selectedCity, selectedCityId, selectedProvince.id, serviceMode, userPosition]);
 
   return (
     <>
@@ -365,7 +370,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               serviceMode={serviceMode}
               averagePrice={currentStatistic.averagePrice}
               userPosition={isUsingUserPosition ? userPosition : null}
-              onUserPositionChange={handleUserPositionChange}
+              onUserPositionChange={(position) => handleUserPositionChange(position, true)}
             />
           ) : (
             <div className="grid h-[52vh] min-h-[360px] place-items-center rounded-md border border-dashed border-ink/20 bg-white text-center shadow-sm">

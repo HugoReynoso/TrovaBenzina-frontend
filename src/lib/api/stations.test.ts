@@ -75,6 +75,21 @@ describe("stations API", () => {
     expect(stations[0].distanceKm).toBe(1.23);
   });
 
+  it("requests nearby stations by coordinates with active filters and limit", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getNearbyStations({ lat: 45.53, lng: 9.04, fuelType: "BENZINA", serviceMode: "self", limit: 800 });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/api/stations/nearby?lat=45.53&lng=9.04&fuelType=BENZINA&selfService=true&limit=800",
+      expect.objectContaining({ next: { revalidate: 300 } })
+    );
+  });
+
   it("requests nearby stations by city and province names", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })
