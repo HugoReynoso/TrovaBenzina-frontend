@@ -42,7 +42,7 @@ interface UserPosition {
   longitude: number;
 }
 
-const quickProvinceNames = ["Milano", "Roma", "Napoli", "Firenze"];
+const quickProvinceNames = ["Milano", "Roma", "Napoli", "Firenze", "Bologna"];
 
 function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }): number {
   const earthRadiusKm = 6371;
@@ -346,7 +346,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                     key={province.id}
                     type="button"
                     className={`h-11 rounded-md border px-3 text-sm font-black shadow-sm transition ${
-                      index === 3 ? "hidden xl:inline-flex xl:items-center" : "inline-flex items-center"
+                      index >= 3 ? "hidden xl:inline-flex xl:items-center" : "inline-flex items-center"
                     } ${
                       selectedProvince.id === province.id && !isUsingUserPosition
                         ? "border-petrol bg-petrol text-white"
