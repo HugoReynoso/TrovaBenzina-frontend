@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     `/prezzo-gpl/${city.slug}`,
     `/storico-prezzo-benzina/${city.slug}`
   ]);
-  const staticRoutes = ["/", "/segnala-prezzo", "/privacy", "/cookie-policy", "/accise-benzina", "/notizie"];
+  const staticRoutes = ["/", "/mappa", "/segnala-prezzo", "/privacy", "/cookie-policy", "/accise-benzina", "/notizie"];
   const newsRoutes = mockNews.map((article) => ({
     url: `${siteUrl}/notizie/${article.slug}`,
     lastModified: article.date

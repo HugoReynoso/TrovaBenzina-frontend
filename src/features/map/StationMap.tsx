@@ -22,6 +22,7 @@ interface StationMapProps {
   averagePrice: number;
   userPosition?: { latitude: number; longitude: number } | null;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
+  className?: string;
 }
 
 function markerIcon(brand: string, price: number, averagePrice: number) {
@@ -171,13 +172,13 @@ function CityMapController({ city, userPosition }: { city: City; userPosition?: 
   return null;
 }
 
-export function StationMap({ city, stations, fuelType, serviceMode, averagePrice, userPosition, onUserPositionChange }: StationMapProps) {
+export function StationMap({ city, stations, fuelType, serviceMode, averagePrice, userPosition, onUserPositionChange, className }: StationMapProps) {
   const [zoom, setZoom] = useState(12);
   const precision = clusterPrecision(zoom);
   const clusters = useMemo(() => buildClusters(stations, precision), [precision, stations]);
 
   return (
-    <div className="h-[54vh] min-h-[360px] overflow-hidden rounded-md border border-ink/10 shadow-soft sm:h-[62vh] md:h-[680px]">
+    <div className={className ?? "h-[54vh] min-h-[360px] overflow-hidden rounded-md border border-ink/10 shadow-soft sm:h-[62vh] md:h-[680px]"}>
       <MapContainer center={[city.latitude, city.longitude]} zoom={12} scrollWheelZoom className="z-0 h-full">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

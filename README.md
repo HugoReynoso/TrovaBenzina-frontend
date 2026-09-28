@@ -58,6 +58,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 - Selezione citta, provincia e comuni principali
 - Geolocalizzazione con fallback su Milano
 - Mappa distributori con marker prezzo e brand
+- Pagina `/mappa` full-screen con filtri compatti e lista completa ordinata per prezzo
 - Logo IP e immagine generica per pompe bianche
 - Top 5 prezzi piu economici, ottimizzato anche per mobile
 - Grafico storico prezzi con fallback visuale quando lo storico backend e vuoto
@@ -70,6 +71,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 ## Route Principali
 
 - `/`
+- `/mappa`
 - `/prezzo-benzina/[city]`
 - `/prezzo-diesel/[city]`
 - `/prezzo-gpl/[city]`

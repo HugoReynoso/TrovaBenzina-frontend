@@ -25,11 +25,6 @@ export const metadata: Metadata = {
     canonical: "/",
     languages: alternateLanguages
   },
-  icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg"
-  },
   openGraph: {
     title: "TrovaBenzina | Prezzi carburante in Italia",
     description: "Confronta distributori, prezzi carburante e stazioni economiche sulla mappa con dati disponibili MIMIT.",

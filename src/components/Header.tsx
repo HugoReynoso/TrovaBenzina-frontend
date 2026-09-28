@@ -8,7 +8,8 @@ import { withBasePath } from "@/lib/site";
 import { LanguageSelector } from "./LanguageSelector";
 
 const navItems = [
-  { href: "/prezzo-benzina/milano", label: "Prezzi" },
+  { href: "/", label: "Home" },
+  { href: "/mappa", label: "Mappa" },
   { href: "/accise-benzina", label: "Accise" },
   { href: "/notizie", label: "Notizie" },
   { href: "/segnala-prezzo", label: "Segnala" }
