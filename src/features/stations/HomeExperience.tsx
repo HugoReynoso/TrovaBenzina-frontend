@@ -8,12 +8,14 @@ import { FuelSelector } from "@/features/filters/FuelSelector";
 import { ProvinceSelector } from "@/features/filters/ProvinceSelector";
 import { ServiceModeSelector } from "@/features/filters/ServiceModeSelector";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
+import type { LocationStatus } from "@/features/map/StationMap";
 import { CheapestStations } from "@/features/stations/CheapestStations";
 import { CitySummary } from "@/features/statistics/CitySummary";
 import { FuelComposition } from "@/features/statistics/FuelComposition";
 import { StatsCards } from "@/features/statistics/StatsCards";
 import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
+import { locateUser } from "@/lib/geolocation";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { sortStationsByPrice } from "@/lib/price";
@@ -67,25 +69,10 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
   );
 }
 
-function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation unavailable"));
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
-      },
-      reject,
-      options
-    );
-  });
-}
+const LOCATION_DENIED_MESSAGE =
+  "Hai negato l'accesso alla posizione. Abilitalo dalle impostazioni del browser oppure scegli una provincia.";
+const LOCATION_UNAVAILABLE_MESSAGE =
+  "Non riesco a trovare la tua posizione in questo momento. Riprova tra qualche secondo oppure scegli una provincia.";
 
 export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, showTitle = true }: HomeExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
@@ -159,7 +146,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     setSearchVersion((version) => version + 1);
   }
 
-  async function requestUserPosition() {
+  function requestUserPosition() {
     if (isLocating) {
       return;
     }
@@ -179,42 +166,36 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
     // Mappa non montata (nessun distributore): leggi la posizione direttamente.
     setIsLocating(true);
-
-    try {
-      const position = await readBrowserPosition({
-        enableHighAccuracy: true,
-        maximumAge: 60000,
-        timeout: 9000
-      }).catch(() =>
-        readBrowserPosition({
-          enableHighAccuracy: false,
-          maximumAge: 300000,
-          timeout: 15000
-        })
-      );
-
-      handleUserPositionChange(position, true);
-    } catch {
-      setError("Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.");
-    } finally {
-      setIsLocating(false);
-    }
+    locateUser({
+      onSuccess: (position) => {
+        setIsLocating(false);
+        handleUserPositionChange(position, true);
+      },
+      onFailure: (reason) => {
+        setIsLocating(false);
+        setError(reason === "denied" ? LOCATION_DENIED_MESSAGE : LOCATION_UNAVAILABLE_MESSAGE);
+      }
+    });
   }
 
-  function handleLocationStatusChange(status: "idle" | "loading" | "ready" | "unavailable") {
+  function handleLocationStatusChange(status: LocationStatus) {
     setIsLocating(status === "loading");
 
-    if (status === "ready" || status === "unavailable") {
+    if (status === "ready" || status === "unavailable" || status === "denied") {
       // Richiesta completata: azzera, cosi' se la mappa si rimonta non richiede di nuovo il GPS.
       setLocateRequestId(0);
     }
 
-    if (status === "ready") {
+    if (status === "loading" || status === "ready") {
       setError("");
     }
 
+    if (status === "denied") {
+      setError(LOCATION_DENIED_MESSAGE);
+    }
+
     if (status === "unavailable") {
-      setError("Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.");
+      setError(LOCATION_UNAVAILABLE_MESSAGE);
     }
   }
 

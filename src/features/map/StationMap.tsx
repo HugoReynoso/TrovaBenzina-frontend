@@ -2,17 +2,20 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LoaderCircle, LocateFixed, Navigation, PencilLine } from "lucide-react";
 import Link from "next/link";
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { BrandLogo } from "@/components/BrandLogo";
 import { escapeHtml, getFuelBrand } from "@/lib/brand";
+import { locateUser } from "@/lib/geolocation";
 import { formatEuro, getPriceTone, getStationPrice } from "@/lib/price";
 import { withBasePath } from "@/lib/site";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City } from "@/types/location";
 import type { Station } from "@/types/station";
+
+export type LocationStatus = "idle" | "loading" | "ready" | "unavailable" | "denied";
 
 interface StationMapProps {
   city: City;
@@ -24,7 +27,7 @@ interface StationMapProps {
   locationLoading?: boolean;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
   locateRequestId?: number;
-  onLocationStatusChange?: (status: "idle" | "loading" | "ready" | "unavailable") => void;
+  onLocationStatusChange?: (status: LocationStatus) => void;
   className?: string;
   showLocationControl?: boolean;
 }
@@ -111,64 +114,42 @@ function LocationControl({
   locationLoading = false
 }: {
   locateRequestId?: number;
-  onLocationStatusChange?: (status: "idle" | "loading" | "ready" | "unavailable") => void;
+  onLocationStatusChange?: (status: LocationStatus) => void;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
   userPosition?: { latitude: number; longitude: number } | null;
   locationLoading?: boolean;
 }) {
   const map = useMap();
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
-  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
+  const [status, setStatus] = useState<LocationStatus>("idle");
 
-  function updateStatus(nextStatus: "idle" | "loading" | "ready" | "unavailable") {
+  function updateStatus(nextStatus: LocationStatus) {
     setStatus(nextStatus);
     onLocationStatusChange?.(nextStatus);
   }
 
-  function requestPosition(focusMap = true) {
-    if (!navigator.geolocation) {
-      updateStatus("unavailable");
-      return;
-    }
+  const cancelLocateRef = useRef<(() => void) | null>(null);
 
+  function requestPosition(focusMap = true) {
+    cancelLocateRef.current?.();
     updateStatus("loading");
 
-    const handleSuccess = (location: GeolocationPosition) => {
-      const nextPosition = {
-        lat: location.coords.latitude,
-        lng: location.coords.longitude
-      };
-      setPosition(nextPosition);
-      updateStatus("ready");
+    cancelLocateRef.current = locateUser({
+      onSuccess: ({ latitude, longitude }) => {
+        cancelLocateRef.current = null;
+        setPosition({ lat: latitude, lng: longitude });
+        updateStatus("ready");
 
-      if (focusMap) {
-        onUserPositionChange?.({ latitude: nextPosition.lat, longitude: nextPosition.lng });
-        map.setView([nextPosition.lat, nextPosition.lng], Math.max(map.getZoom(), 14), { animate: true });
-      }
-    };
-
-    navigator.geolocation.getCurrentPosition(
-      handleSuccess,
-      () => {
-        // Secondo tentativo a bassa precisione (utile su desktop / GPS lento).
-        navigator.geolocation.getCurrentPosition(
-          handleSuccess,
-          () => {
-            updateStatus("unavailable");
-          },
-          {
-            enableHighAccuracy: false,
-            maximumAge: 300000,
-            timeout: 15000
-          }
-        );
+        if (focusMap) {
+          onUserPositionChange?.({ latitude, longitude });
+          map.setView([latitude, longitude], Math.max(map.getZoom(), 14), { animate: true });
+        }
       },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 60000,
-        timeout: 9000
+      onFailure: (reason) => {
+        cancelLocateRef.current = null;
+        updateStatus(reason);
       }
-    );
+    });
   }
 
   useEffect(() => {
@@ -177,6 +158,8 @@ function LocationControl({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locateRequestId]);
+
+  useEffect(() => () => cancelLocateRef.current?.(), []);
 
   const isBusy = status === "loading" || locationLoading;
   const label = isBusy ? "Cerco..." : status === "ready" ? "Posizione" : "Posizionami";
