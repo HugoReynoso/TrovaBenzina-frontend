@@ -1,5 +1,5 @@
 import type { AdminLogEntry, PriceReport } from "@/types/report";
-import { apiGet, apiRequest } from "./client";
+import { apiGet, apiRequest, apiRequestText } from "./client";
 
 export type CreatePriceReportInput = Omit<PriceReport, "id" | "status" | "submittedAt">;
 
@@ -38,6 +38,14 @@ export async function rejectPriceReport(id: number, token: string): Promise<Pric
 
 export async function getAdminLogs(token: string): Promise<AdminLogEntry[]> {
   return apiGet<AdminLogEntry[]>("/api/admin/logs", {
+    headers: authHeaders(token),
+    cache: "no-store"
+  });
+}
+
+export async function importMimitPrices(token: string): Promise<string> {
+  return apiRequestText("/api/admin/mimit/import", {
+    method: "POST",
     headers: authHeaders(token),
     cache: "no-store"
   });

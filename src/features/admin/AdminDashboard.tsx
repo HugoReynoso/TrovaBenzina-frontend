@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, ShieldCheck, X } from "lucide-react";
-import { approvePriceReport, rejectPriceReport } from "@/lib/api/reports";
+import { Check, DatabaseZap, ShieldCheck, X } from "lucide-react";
+import { approvePriceReport, importMimitPrices, rejectPriceReport } from "@/lib/api/reports";
 import { formatEuro } from "@/lib/price";
 import type { AdminLogEntry, PriceReport, PriceReportStatus } from "@/types/report";
 
@@ -30,6 +30,8 @@ const levelClass: Record<AdminLogEntry["level"], string> = {
 export function AdminDashboard({ initialReports, logs, token, loading, onReportsChange, onLogout }: AdminDashboardProps) {
   const [reports, setReports] = useState(initialReports);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [isImportingPrices, setIsImportingPrices] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
   const [error, setError] = useState("");
   const pendingCount = useMemo(() => reports.filter((report) => report.status === "pending").length, [reports]);
 
@@ -50,6 +52,21 @@ export function AdminDashboard({ initialReports, logs, token, loading, onReports
       setError(updateError instanceof Error ? updateError.message : "Aggiornamento segnalazione non riuscito.");
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  async function handleMimitImport() {
+    setIsImportingPrices(true);
+    setImportMessage("");
+    setError("");
+
+    try {
+      const message = await importMimitPrices(token);
+      setImportMessage(message || "Import prezzi avviato correttamente.");
+    } catch (importError) {
+      setError(importError instanceof Error ? importError.message : "Import prezzi non riuscito.");
+    } finally {
+      setIsImportingPrices(false);
     }
   }
 
@@ -76,6 +93,33 @@ export function AdminDashboard({ initialReports, logs, token, loading, onReports
         </p>
         {loading ? <p className="mt-3 rounded-md bg-ink/[0.035] p-3 text-sm font-bold text-ink/64">Caricamento dati admin...</p> : null}
         {error ? <p className="mt-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
+      </section>
+
+      <section className="rounded-md border border-ink/10 bg-white p-4 shadow-sm md:p-6" aria-labelledby="admin-mimit-import">
+        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-black text-petrol">
+              <DatabaseZap size={18} aria-hidden="true" />
+              Aggiornamento MIMIT
+            </p>
+            <h2 id="admin-mimit-import" className="mt-1 text-xl font-black text-ink">
+              Aggiorna totale prezzi
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm text-ink/66">
+              Avvia l&apos;import dei prezzi dal backend usando la sessione admin corrente.
+            </p>
+          </div>
+          <button
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-petrol px-5 text-sm font-black text-white shadow-sm transition hover:bg-[#104955] disabled:opacity-60"
+            type="button"
+            disabled={isImportingPrices}
+            onClick={handleMimitImport}
+          >
+            <DatabaseZap size={18} aria-hidden="true" />
+            {isImportingPrices ? "Aggiornamento..." : "Aggiorna prezzi"}
+          </button>
+        </div>
+        {importMessage ? <p className="mt-4 rounded-md bg-mint/10 p-3 text-sm font-bold text-mint">{importMessage}</p> : null}
       </section>
 
       <section className="overflow-hidden rounded-md border border-ink/10 bg-white shadow-sm" aria-labelledby="admin-reports">

@@ -56,3 +56,47 @@ export async function apiRequest<T>(path: string, init?: ApiRequestInit): Promis
 export async function apiGet<T>(path: string, init?: ApiRequestInit): Promise<T> {
   return apiRequest<T>(path, init);
 }
+
+export async function apiRequestText(path: string, init?: ApiRequestInit): Promise<string> {
+  if (!API_BASE_URL) {
+    throw new ApiError("NEXT_PUBLIC_API_BASE_URL is not configured");
+  }
+
+  const fetchInit: ApiRequestInit = {
+    ...init,
+    headers: {
+      Accept: "application/json, text/plain",
+      ...init?.headers
+    }
+  };
+
+  if (!init?.cache) {
+    fetchInit.next = { revalidate: 300 };
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, fetchInit);
+
+  if (!response.ok) {
+    let message = `API request failed: ${response.status} ${response.statusText}`;
+
+    try {
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        const body = (await response.json()) as { message?: string; error?: string };
+        message = body.message ?? body.error ?? message;
+      } else {
+        message = (await response.text()) || message;
+      }
+    } catch {
+      // Keep the HTTP status message when the backend does not return a readable body.
+    }
+
+    throw new ApiError(message, response.status);
+  }
+
+  if (response.status === 204) {
+    return "";
+  }
+
+  return response.text();
+}
