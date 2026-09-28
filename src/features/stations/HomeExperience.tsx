@@ -471,7 +471,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
 function DataLoadingOverlay() {
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-paper/94 px-6 backdrop-blur-sm" role="status" aria-live="polite">
+    <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center bg-paper/94 px-6 backdrop-blur-sm" role="status" aria-live="polite">
       <div className="w-full max-w-sm overflow-hidden rounded-md border border-ink/10 bg-white shadow-soft">
         <div className="h-1 bg-petrol/15">
           <div className="route-loading-bar h-full w-1/2 bg-petrol" />
