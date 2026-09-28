@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { withBasePath } from "@/lib/site";
@@ -15,8 +16,20 @@ const navItems = [
   { href: "/segnala-prezzo", label: "Segnala" }
 ];
 
+function normalizePath(path: string): string {
+  const trimmed = path.replace(/\/+$/, "");
+  return trimmed === "" ? "/" : trimmed;
+}
+
+function isActivePath(pathname: string, href: string): boolean {
+  const current = normalizePath(pathname);
+  const target = normalizePath(href);
+  return target === "/" ? current === "/" : current === target || current.startsWith(`${target}/`);
+}
+
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname() ?? "/";
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/92 backdrop-blur" suppressHydrationWarning>
@@ -32,15 +45,23 @@ export function Header() {
           </span>
         </Link>
         <nav aria-label="Navigazione principale" className="hidden items-center gap-1 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              className="rounded-md px-3 py-2 text-sm font-semibold text-ink/76 transition hover:bg-ink/5 hover:text-ink"
-              href={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive = isActivePath(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                className={`rounded-md px-3 py-2 text-sm transition hover:bg-ink/5 hover:text-ink ${
+                  isActive
+                    ? "font-black text-petrol underline decoration-[#d49318] decoration-[3px] underline-offset-[10px]"
+                    : "font-semibold text-ink/76"
+                }`}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="flex items-center gap-2" suppressHydrationWarning>
           <LanguageSelector />
@@ -58,16 +79,20 @@ export function Header() {
       {menuOpen ? (
         <nav className="border-t border-ink/10 bg-white px-4 py-3 shadow-sm md:hidden" aria-label="Navigazione mobile">
           <div className="mx-auto grid max-w-7xl gap-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                className="rounded-md px-3 py-3 text-base font-black text-ink transition hover:bg-ink/5"
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const isActive = isActivePath(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  className={`rounded-md px-3 py-3 text-base font-black transition hover:bg-ink/5 ${isActive ? "bg-petrol/8 text-petrol" : "text-ink"}`}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
         </nav>
       ) : null}

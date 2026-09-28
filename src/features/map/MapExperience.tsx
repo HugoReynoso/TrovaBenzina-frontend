@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Fuel, Navigation, RefreshCw, Search } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
+import type { LocationStatus } from "@/features/map/StationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { getStationPrice, sortStationsByPrice } from "@/lib/price";
@@ -55,6 +56,11 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
   );
 }
 
+const LOCATION_DENIED_MESSAGE =
+  "Hai negato l'accesso alla posizione. Abilitalo dalle impostazioni del browser oppure scegli una provincia.";
+const LOCATION_UNAVAILABLE_MESSAGE =
+  "Non riesco a trovare la tua posizione in questo momento. Riprova tra qualche secondo oppure scegli una provincia.";
+
 function formatSavings(value: number): string {
   return new Intl.NumberFormat("it-IT", {
     style: "currency",
@@ -74,7 +80,9 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [locationError, setLocationError] = useState("");
   const userSelectedProvinceRef = useRef(false);
+  const stationListRef = useRef<HTMLOListElement>(null);
   const dataCacheRef = useRef(new Map<string, LoadedMapData>());
   const loadedKeyRef = useRef(`province:${initialProvince.id}:BENZINA:self:0`);
 
@@ -95,6 +103,22 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
     [fuelType, serviceMode, visibleStations]
   );
   const mapStations = orderedStations;
+
+  // Quando cambiano i risultati (nuova provincia, "Posizionami", filtri) riporta la lista in cima,
+  // altrimenti resta scorsa dove si trovava e la nuova "top" dei prezzi non si vede.
+  useEffect(() => {
+    stationListRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [orderedStations]);
+
+  function handleLocationStatusChange(status: LocationStatus) {
+    if (status === "loading" || status === "ready") {
+      setLocationError("");
+    } else if (status === "denied") {
+      setLocationError(LOCATION_DENIED_MESSAGE);
+    } else if (status === "unavailable") {
+      setLocationError(LOCATION_UNAVAILABLE_MESSAGE);
+    }
+  }
   const cheapestPrice = orderedStations.map((station) => getStationPrice(station, fuelType, serviceMode)?.price).find(Boolean);
   const savingOnTank = cheapestPrice ? Math.max(0, (currentStatistic.averagePrice - cheapestPrice) * 50) : 0;
 
@@ -232,6 +256,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           userPosition={isUsingUserPosition ? userPosition : null}
           locationLoading={isUsingUserPosition && isLoading}
           onUserPositionChange={(position) => handleUserPositionChange(position, true)}
+          onLocationStatusChange={handleLocationStatusChange}
           locationControlClassName="top-[118px] sm:top-3"
           className="map-experience__leaflet w-full min-w-0 overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
         />
@@ -256,9 +281,10 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           Risparmio: {formatSavings(savingOnTank)} su un pieno di 50L
         </div>
 
+        {locationError ? <p className="m-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{locationError}</p> : null}
         {error ? <p className="m-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
 
-        <ol className="map-station-carousel flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-3 py-3 lg:grid lg:flex-1 lg:auto-rows-min lg:gap-0 lg:overflow-x-hidden lg:overflow-y-auto lg:px-0 lg:py-0">
+        <ol ref={stationListRef} className="map-station-carousel flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-3 py-3 lg:grid lg:flex-1 lg:auto-rows-min lg:gap-0 lg:overflow-x-hidden lg:overflow-y-auto lg:px-0 lg:py-0">
           {orderedStations.length > 0 ? (
             orderedStations.map((station, index) => (
               <MapStationCard key={station.id} station={station} index={index} fuelType={fuelType} serviceMode={serviceMode} />
