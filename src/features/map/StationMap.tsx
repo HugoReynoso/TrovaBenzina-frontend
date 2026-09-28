@@ -22,6 +22,8 @@ interface StationMapProps {
   averagePrice: number;
   userPosition?: { latitude: number; longitude: number } | null;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
+  locateRequestId?: number;
+  onLocationStatusChange?: (status: "idle" | "loading" | "ready" | "unavailable") => void;
   className?: string;
   showLocationControl?: boolean;
 }
@@ -100,24 +102,37 @@ function buildClusters(stations: Station[], precision: number | null): StationCl
   }));
 }
 
-function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (position: { latitude: number; longitude: number }) => void }) {
+function LocationControl({
+  locateRequestId = 0,
+  onLocationStatusChange,
+  onUserPositionChange
+}: {
+  locateRequestId?: number;
+  onLocationStatusChange?: (status: "idle" | "loading" | "ready" | "unavailable") => void;
+  onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
+}) {
   const map = useMap();
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
 
+  function updateStatus(nextStatus: "idle" | "loading" | "ready" | "unavailable") {
+    setStatus(nextStatus);
+    onLocationStatusChange?.(nextStatus);
+  }
+
   function requestPosition(focusMap = true) {
     if (!navigator.geolocation) {
-      setStatus("unavailable");
+      updateStatus("unavailable");
       return;
     }
 
-    setStatus("loading");
+    updateStatus("loading");
     navigator.geolocation.getCurrentPosition(
       (location) => {
         const nextPosition = {
           lat: location.coords.latitude,
           lng: location.coords.longitude
         };
-        setStatus("ready");
+        updateStatus("ready");
 
         if (focusMap) {
           onUserPositionChange?.({ latitude: nextPosition.lat, longitude: nextPosition.lng });
@@ -125,7 +140,7 @@ function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (pos
         }
       },
       () => {
-        setStatus("unavailable");
+        updateStatus("unavailable");
       },
       {
         enableHighAccuracy: true,
@@ -134,6 +149,13 @@ function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (pos
       }
     );
   }
+
+  useEffect(() => {
+    if (locateRequestId > 0) {
+      requestPosition(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locateRequestId]);
 
   const label = status === "loading" ? "Cerco..." : status === "ready" ? "Posizione" : "Posizionami";
 
@@ -176,6 +198,8 @@ export function StationMap({
   averagePrice,
   userPosition,
   onUserPositionChange,
+  locateRequestId,
+  onLocationStatusChange,
   className,
   showLocationControl = true
 }: StationMapProps) {
@@ -192,7 +216,13 @@ export function StationMap({
         />
         <ZoomTracker onZoomChange={setZoom} />
         <CityMapController city={city} userPosition={userPosition} />
-        {showLocationControl ? <LocationControl onUserPositionChange={onUserPositionChange} /> : null}
+        {showLocationControl ? (
+          <LocationControl
+            locateRequestId={locateRequestId}
+            onLocationStatusChange={onLocationStatusChange}
+            onUserPositionChange={onUserPositionChange}
+          />
+        ) : null}
         {userPosition ? (
           <CircleMarker
             center={[userPosition.latitude, userPosition.longitude]}

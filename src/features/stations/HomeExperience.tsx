@@ -67,26 +67,6 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
   );
 }
 
-function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation unavailable"));
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
-      },
-      reject,
-      options
-    );
-  });
-}
-
 export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, showTitle = true }: HomeExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
@@ -98,6 +78,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [locateRequestId, setLocateRequestId] = useState(0);
   const [error, setError] = useState("");
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const userSelectedProvinceRef = useRef(false);
@@ -158,7 +139,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     setSearchVersion((version) => version + 1);
   }
 
-  async function requestUserPosition() {
+  function requestUserPosition() {
     if (isLocating) {
       return;
     }
@@ -170,31 +151,18 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
     setIsLocating(true);
     setError("");
+    setLocateRequestId((requestId) => requestId + 1);
+  }
 
-    try {
-      const position = await readBrowserPosition({
-        enableHighAccuracy: true,
-        maximumAge: 60000,
-        timeout: 9000
-      }).catch(() =>
-        readBrowserPosition({
-          enableHighAccuracy: false,
-          maximumAge: 300000,
-          timeout: 15000
-        })
-      );
+  function handleLocationStatusChange(status: "idle" | "loading" | "ready" | "unavailable") {
+    setIsLocating(status === "loading");
 
-      handleUserPositionChange(position, true);
-    } catch {
-      if (userPosition) {
-        handleUserPositionChange(userPosition, true);
-        setError("");
-        return;
-      }
+    if (status === "ready") {
+      setError("");
+    }
 
+    if (status === "unavailable") {
       setError("Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.");
-    } finally {
-      setIsLocating(false);
     }
   }
 
@@ -392,6 +360,8 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
               serviceMode={serviceMode}
               averagePrice={currentStatistic.averagePrice}
               userPosition={isUsingUserPosition ? userPosition : null}
+              locateRequestId={locateRequestId}
+              onLocationStatusChange={handleLocationStatusChange}
               onUserPositionChange={(position) => handleUserPositionChange(position, true)}
             />
           ) : (
