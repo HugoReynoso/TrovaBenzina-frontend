@@ -132,22 +132,36 @@ function LocationControl({
     }
 
     updateStatus("loading");
-    navigator.geolocation.getCurrentPosition(
-      (location) => {
-        const nextPosition = {
-          lat: location.coords.latitude,
-          lng: location.coords.longitude
-        };
-        setPosition(nextPosition);
-        updateStatus("ready");
 
-        if (focusMap) {
-          onUserPositionChange?.({ latitude: nextPosition.lat, longitude: nextPosition.lng });
-          map.setView([nextPosition.lat, nextPosition.lng], Math.max(map.getZoom(), 14), { animate: true });
-        }
-      },
+    const handleSuccess = (location: GeolocationPosition) => {
+      const nextPosition = {
+        lat: location.coords.latitude,
+        lng: location.coords.longitude
+      };
+      setPosition(nextPosition);
+      updateStatus("ready");
+
+      if (focusMap) {
+        onUserPositionChange?.({ latitude: nextPosition.lat, longitude: nextPosition.lng });
+        map.setView([nextPosition.lat, nextPosition.lng], Math.max(map.getZoom(), 14), { animate: true });
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      handleSuccess,
       () => {
-        updateStatus("unavailable");
+        // Secondo tentativo a bassa precisione (utile su desktop / GPS lento).
+        navigator.geolocation.getCurrentPosition(
+          handleSuccess,
+          () => {
+            updateStatus("unavailable");
+          },
+          {
+            enableHighAccuracy: false,
+            maximumAge: 300000,
+            timeout: 15000
+          }
+        );
       },
       {
         enableHighAccuracy: true,
