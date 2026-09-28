@@ -14,9 +14,11 @@ interface CheapestStationsProps {
   title?: string;
   /** Clic su un distributore: la pagina centra la mappa su di lui. */
   onSelectStation?: (station: Station) => void;
+  /** false quando il titolo e' gia' mostrato altrove (es. box a scomparsa su mobile): evita titoli e id duplicati. */
+  showHeader?: boolean;
 }
 
-export function CheapestStations({ stations, fuelType, serviceMode, cityName, title, onSelectStation }: CheapestStationsProps) {
+export function CheapestStations({ stations, fuelType, serviceMode, cityName, title, onSelectStation, showHeader = true }: CheapestStationsProps) {
   if (stations.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-ink/20 bg-white p-5 text-sm text-ink/70">
@@ -26,14 +28,19 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
   }
 
   return (
-    <section aria-labelledby="piu-economici" className="rounded-md border border-ink/10 bg-white p-3 shadow-sm md:p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="piu-economici" className="text-lg font-black leading-tight text-ink md:text-xl">
-          {title ?? `Più economici${cityName ? ` (${cityName})` : ""}`}
-        </h2>
-        <span className="rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">Top {stations.length}</span>
-      </div>
-      <ol className="mt-3 grid gap-2 md:mt-4 md:gap-3">
+    <section
+      aria-labelledby={showHeader ? "piu-economici" : undefined}
+      className={showHeader ? "rounded-md border border-ink/10 bg-white p-3 shadow-sm md:p-4" : undefined}
+    >
+      {showHeader ? (
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="piu-economici" className="text-lg font-black leading-tight text-ink md:text-xl">
+            {title ?? `Più economici${cityName ? ` (${cityName})` : ""}`}
+          </h2>
+          <span className="rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">Top {stations.length}</span>
+        </div>
+      ) : null}
+      <ol className={showHeader ? "mt-3 grid gap-2 md:mt-4 md:gap-3" : "grid gap-2"}>
         {stations.map((station, index) => {
           const price = getStationPrice(station, fuelType, serviceMode);
           return (

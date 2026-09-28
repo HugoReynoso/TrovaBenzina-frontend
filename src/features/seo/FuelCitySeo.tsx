@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { filterRecentStations, formatEuro, getStationPrice, latestCommunicationTime, MAX_PRICE_AGE_DAYS, sortStationsByPrice } from "@/lib/price";
+import { filterReliableStations, formatEuro, getStationPrice, latestCommunicationTime, MAX_PRICE_AGE_DAYS, sortStationsByPrice } from "@/lib/price";
 import { absoluteUrl, breadcrumbJsonLd, cityFuelPath, fuelSeo } from "@/lib/seo";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City } from "@/types/location";
@@ -64,7 +64,7 @@ export function FuelCitySeo({ city, cities, fuelType, stations, statistic, servi
   // Solo prezzi comunicati negli ultimi giorni (rispetto all'ultimo aggiornamento dei dati):
   // i prezzi vecchi di mesi o anni falserebbero minimo, media e classifica.
   const recentStations = sortStationsByPrice(
-    filterRecentStations(stations, fuelType, mode, latestCommunicationTime(stations)),
+    filterReliableStations(stations, fuelType, mode, latestCommunicationTime(stations)),
     fuelType,
     mode
   );

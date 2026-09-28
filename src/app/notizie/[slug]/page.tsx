@@ -65,6 +65,7 @@ export default async function NewsArticlePage({ params }: PageProps) {
       image: `${siteUrl}${defaultOgImage}`,
       datePublished: article.date,
       dateModified: article.date,
+      wordCount: article.content.join(" ").split(/\s+/).length,
       author: {
         "@type": "Organization",
         name: siteName
@@ -89,7 +90,7 @@ export default async function NewsArticlePage({ params }: PageProps) {
     <>
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-8 md:px-6">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
         <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm font-bold text-ink/58" aria-label="Breadcrumb">
           <Link className="hover:text-petrol" href="/">Home</Link>
           <span aria-hidden="true">/</span>
@@ -104,9 +105,15 @@ export default async function NewsArticlePage({ params }: PageProps) {
           Aggiornato il {new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(article.date))}
         </time>
         <article className="mt-8 grid gap-4 leading-relaxed text-ink/78">
-          {article.content.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
+          {article.content.map((paragraph) =>
+            paragraph.startsWith("## ") ? (
+              <h2 key={paragraph} className="mt-4 text-xl font-black leading-tight text-ink">
+                {paragraph.slice(3)}
+              </h2>
+            ) : (
+              <p key={paragraph}>{paragraph}</p>
+            )
+          )}
         </article>
         {article.relatedLinks?.length ? (
           <section className="mt-8 rounded-md border border-ink/10 bg-white p-4 shadow-sm" aria-labelledby="guide-correlate">

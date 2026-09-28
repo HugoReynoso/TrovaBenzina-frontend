@@ -7,7 +7,7 @@ import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import type { LocationStatus, StationFocusRequest } from "@/features/map/StationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { filterRecentStations, formatLatestUpdate, getStationPrice, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
+import { filterReliableStations, formatLatestUpdate, getStationPrice, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
 import { useNow } from "@/lib/useNow";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -111,7 +111,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   // Nella lista "top": solo prezzi comunicati negli ultimi 4 giorni. Prima dell'idratazione usiamo
   // come riferimento la comunicazione piu' recente nei dati (stesso risultato su server e browser).
   const orderedStations = useMemo(
-    () => filterRecentStations(mapStations, fuelType, serviceMode, now ?? latestCommunicationTime(mapStations)),
+    () => filterReliableStations(mapStations, fuelType, serviceMode, now ?? latestCommunicationTime(mapStations)),
     [fuelType, mapStations, now, serviceMode]
   );
 
@@ -449,7 +449,7 @@ function MapStationCard({
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.08em] text-petrol">#{index + 1}</p>
-          <h2 className="mt-1 line-clamp-2 text-lg font-black leading-tight text-ink">{station.name}</h2>
+          <p className="mt-1 line-clamp-2 text-lg font-black leading-tight text-ink">{station.name}</p>
           <p className="mt-1 line-clamp-2 text-sm text-ink/68">
             {station.address} {station.cityName ? `${station.cityName} (${station.provinceName})` : ""}
           </p>

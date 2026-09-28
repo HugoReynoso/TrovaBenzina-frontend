@@ -18,7 +18,7 @@ import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { locateUser } from "@/lib/geolocation";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
-import { filterRecentStations, formatLatestUpdate, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
+import { filterReliableStations, formatLatestUpdate, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
 import { useNow } from "@/lib/useNow";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City, Province } from "@/types/location";
@@ -113,7 +113,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   // riferimento la comunicazione piu' recente nei dati, cosi' server e browser mostrano la stessa lista.
   const cheapest = useMemo(() => {
     const referenceTime = now ?? latestCommunicationTime(visibleStations);
-    return sortStationsByPrice(filterRecentStations(visibleStations, fuelType, serviceMode, referenceTime), fuelType, serviceMode).slice(0, 5);
+    return sortStationsByPrice(filterReliableStations(visibleStations, fuelType, serviceMode, referenceTime), fuelType, serviceMode).slice(0, 5);
   }, [fuelType, now, serviceMode, visibleStations]);
 
   function handleSelectStation(station: Station) {
@@ -468,7 +468,15 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             </button>
             {mobileRankingOpen ? (
               <div className="mt-4 border-t border-ink/10 pt-4">
-                <CheapestStations stations={cheapest} fuelType={fuelType} serviceMode={serviceMode} cityName={selectedCity.name} title={rankingTitle} onSelectStation={handleSelectStation} />
+                <CheapestStations
+                  stations={cheapest}
+                  fuelType={fuelType}
+                  serviceMode={serviceMode}
+                  cityName={selectedCity.name}
+                  title={rankingTitle}
+                  onSelectStation={handleSelectStation}
+                  showHeader={false}
+                />
               </div>
             ) : null}
           </section>
