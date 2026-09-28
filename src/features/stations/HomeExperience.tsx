@@ -169,6 +169,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     locateUser({
       onSuccess: (position) => {
         setIsLocating(false);
+        setError("");
         handleUserPositionChange(position, true);
       },
       onFailure: (reason) => {
