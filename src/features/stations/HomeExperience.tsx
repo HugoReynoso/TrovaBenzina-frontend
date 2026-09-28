@@ -42,6 +42,8 @@ interface UserPosition {
   longitude: number;
 }
 
+const quickProvinceNames = ["Milano", "Roma", "Napoli", "Firenze"];
+
 function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }): number {
   const earthRadiusKm = 6371;
   const degreesToRadians = Math.PI / 180;
@@ -108,6 +110,13 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const rankingTitle = isUsingUserPosition
     ? "Top 5 piu economici intorno a te"
     : `Top 5 piu economici in provincia di ${selectedProvince.name}`;
+  const quickProvinces = useMemo(
+    () =>
+      quickProvinceNames
+        .map((provinceName) => provinces.find((province) => province.name.toLowerCase() === provinceName.toLowerCase()))
+        .filter((province): province is Province => Boolean(province)),
+    [provinces]
+  );
 
   useEffect(() => {
     dataCacheRef.current.set(`province:${initialProvince.id}:BENZINA:self:0`, {
@@ -132,6 +141,13 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
   function searchSelectedProvince() {
     userSelectedProvinceRef.current = true;
+    setSearchVersion((version) => version + 1);
+  }
+
+  function selectQuickProvince(nextProvinceId: number) {
+    userSelectedProvinceRef.current = true;
+    setUserPosition(null);
+    setProvinceId(nextProvinceId);
     setSearchVersion((version) => version + 1);
   }
 
@@ -343,15 +359,32 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                 <Search size={17} aria-hidden="true" />
                 Trova
               </button>
-              <div className="hidden lg:col-span-4 lg:block">
+              <div className="hidden lg:col-span-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2">
                 <button
                   type="button"
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-petrol/20 bg-white px-4 text-sm font-black text-petrol shadow-sm transition hover:border-petrol/45 md:w-auto"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-petrol/20 bg-white px-4 text-sm font-black text-petrol shadow-sm transition hover:border-petrol/45"
                   onClick={requestUserPosition}
                 >
                   <LocateFixed size={17} aria-hidden="true" />
                   Usa la mia posizione
                 </button>
+                <span className="ml-1 text-xs font-black uppercase tracking-[0.08em] text-ink/45">Veloci</span>
+                {quickProvinces.map((province, index) => (
+                  <button
+                    key={province.id}
+                    type="button"
+                    className={`h-11 rounded-md border px-3 text-sm font-black shadow-sm transition ${
+                      index === 3 ? "hidden xl:inline-flex xl:items-center" : "inline-flex items-center"
+                    } ${
+                      selectedProvince.id === province.id && !isUsingUserPosition
+                        ? "border-petrol bg-petrol text-white"
+                        : "border-ink/10 bg-white text-ink/70 hover:border-petrol/35 hover:text-petrol"
+                    }`}
+                    onClick={() => selectQuickProvince(province.id)}
+                  >
+                    {province.name}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-ink/62">
