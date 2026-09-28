@@ -6,7 +6,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { geolocationErrorMessage, requestBrowserPosition } from "@/lib/geolocation";
+import { canUseBrowserPosition, geolocationErrorMessage, requestBrowserPosition } from "@/lib/geolocation";
 import { formatEuro, getStationPrice, sortStationsByPrice } from "@/lib/price";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -65,6 +65,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState("");
   const userSelectedProvinceRef = useRef(false);
   const dataCacheRef = useRef(new Map<string, LoadedMapData>());
@@ -119,11 +120,16 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   }, [cities]);
 
   async function requestUserPosition() {
-    if (!navigator.geolocation) {
+    if (isLocating) {
+      return;
+    }
+
+    if (!canUseBrowserPosition()) {
       setError("Geolocalizzazione non disponibile su questo dispositivo.");
       return;
     }
 
+    setIsLocating(true);
     setError("");
 
     try {
@@ -131,6 +137,8 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
       handleUserPositionChange(position, true);
     } catch (positionError) {
       setError(geolocationErrorMessage(positionError, "Posizionami"));
+    } finally {
+      setIsLocating(false);
     }
   }
 
@@ -220,6 +228,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
         <MapFilters
           fuelType={fuelType}
           isLoading={isLoading}
+          isLocating={isLocating}
           onFuelChange={handleFuelChange}
           onProvinceChange={(nextProvinceId) => {
             userSelectedProvinceRef.current = true;
@@ -289,6 +298,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
 function MapFilters({
   fuelType,
   isLoading,
+  isLocating,
   onFuelChange,
   onProvinceChange,
   onRefresh,
@@ -300,6 +310,7 @@ function MapFilters({
 }: {
   fuelType: FuelTypeCode;
   isLoading: boolean;
+  isLocating: boolean;
   onFuelChange: (fuelType: FuelTypeCode) => void;
   onProvinceChange: (provinceId: number) => void;
   onRefresh: () => void;
@@ -363,9 +374,10 @@ function MapFilters({
           type="button"
           className="inline-flex h-11 items-center gap-2 rounded-md bg-petrol px-3 text-sm font-black text-white shadow-sm transition hover:bg-[#104955]"
           onClick={onRequestPosition}
+          disabled={isLocating}
         >
-          <LocateFixed size={17} aria-hidden="true" />
-          <span className="hidden sm:inline">Posizionami</span>
+          <LocateFixed className={isLocating ? "animate-pulse" : undefined} size={17} aria-hidden="true" />
+          <span className="hidden sm:inline">{isLocating ? "Cerco..." : "Posizionami"}</span>
         </button>
         <button
           type="button"

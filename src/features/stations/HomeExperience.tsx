@@ -15,7 +15,7 @@ import { StatsCards } from "@/features/statistics/StatsCards";
 import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { geolocationErrorMessage, requestBrowserPosition } from "@/lib/geolocation";
+import { canUseBrowserPosition, geolocationErrorMessage, requestBrowserPosition } from "@/lib/geolocation";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { sortStationsByPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -78,6 +78,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const [cheapest, setCheapest] = useState(() => sortStationsByPrice(stations, "BENZINA", "self").slice(0, 5));
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState("");
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const userSelectedProvinceRef = useRef(false);
@@ -139,11 +140,16 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   }
 
   async function requestUserPosition() {
-    if (!navigator.geolocation) {
+    if (isLocating) {
+      return;
+    }
+
+    if (!canUseBrowserPosition()) {
       setError("Geolocalizzazione non disponibile su questo dispositivo.");
       return;
     }
 
+    setIsLocating(true);
     setError("");
 
     try {
@@ -157,6 +163,8 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       }
 
       setError(geolocationErrorMessage(positionError, "Usa la mia posizione"));
+    } finally {
+      setIsLocating(false);
     }
   }
 
@@ -290,8 +298,9 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                 className="grid size-11 shrink-0 place-items-center rounded-md bg-petrol text-white shadow-sm transition hover:bg-[#104955] md:hidden"
                 aria-label="Usa la mia posizione"
                 onClick={requestUserPosition}
+                disabled={isLocating}
               >
-                <LocateFixed size={20} aria-hidden="true" />
+                <LocateFixed className={isLocating ? "animate-pulse" : undefined} size={20} aria-hidden="true" />
               </button>
             </div>
             <div className="grid gap-2 rounded-md bg-ink/[0.035] p-2.5 md:gap-3 md:p-3 lg:grid-cols-[1.05fr_0.9fr_1.15fr_auto] lg:items-end">
@@ -313,9 +322,10 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                   type="button"
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-petrol/20 bg-white px-4 text-sm font-black text-petrol shadow-sm transition hover:border-petrol/45"
                   onClick={requestUserPosition}
+                  disabled={isLocating}
                 >
-                  <LocateFixed size={17} aria-hidden="true" />
-                  Usa la mia posizione
+                  <LocateFixed className={isLocating ? "animate-pulse" : undefined} size={17} aria-hidden="true" />
+                  {isLocating ? "Cerco..." : "Usa la mia posizione"}
                 </button>
                 <span className="ml-1 text-xs font-black uppercase tracking-[0.08em] text-ink/45">Veloci</span>
                 {quickProvinces.map((province, index) => (

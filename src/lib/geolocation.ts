@@ -3,6 +3,10 @@ export interface BrowserPosition {
   longitude: number;
 }
 
+export function canUseBrowserPosition(): boolean {
+  return typeof window !== "undefined" && Boolean(window.navigator.geolocation);
+}
+
 function toBrowserPosition(position: GeolocationPosition): BrowserPosition {
   return {
     latitude: position.coords.latitude,
@@ -12,12 +16,12 @@ function toBrowserPosition(position: GeolocationPosition): BrowserPosition {
 
 function readCurrentPosition(options: PositionOptions): Promise<BrowserPosition> {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
+    if (typeof window === "undefined" || !window.navigator.geolocation) {
       reject(new Error("Geolocation unavailable"));
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
+    window.navigator.geolocation.getCurrentPosition(
       (position) => resolve(toBrowserPosition(position)),
       reject,
       options
@@ -27,7 +31,7 @@ function readCurrentPosition(options: PositionOptions): Promise<BrowserPosition>
 
 function watchPositionOnce(options: PositionOptions, timeoutMs: number): Promise<BrowserPosition> {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
+    if (typeof window === "undefined" || !window.navigator.geolocation) {
       reject(new Error("Geolocation unavailable"));
       return;
     }
@@ -35,23 +39,23 @@ function watchPositionOnce(options: PositionOptions, timeoutMs: number): Promise
     let watchId: number | null = null;
     const timeoutId = window.setTimeout(() => {
       if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
+        window.navigator.geolocation.clearWatch(watchId);
       }
       reject(new DOMException("Geolocation request timed out", "TimeoutError"));
     }, timeoutMs);
 
-    watchId = navigator.geolocation.watchPosition(
+    watchId = window.navigator.geolocation.watchPosition(
       (position) => {
         window.clearTimeout(timeoutId);
         if (watchId !== null) {
-          navigator.geolocation.clearWatch(watchId);
+          window.navigator.geolocation.clearWatch(watchId);
         }
         resolve(toBrowserPosition(position));
       },
       (error) => {
         window.clearTimeout(timeoutId);
         if (watchId !== null) {
-          navigator.geolocation.clearWatch(watchId);
+          window.navigator.geolocation.clearWatch(watchId);
         }
         reject(error);
       },
@@ -62,8 +66,8 @@ function watchPositionOnce(options: PositionOptions, timeoutMs: number): Promise
 
 export async function requestBrowserPosition(): Promise<BrowserPosition> {
   const attempts: Array<() => Promise<BrowserPosition>> = [
-    () => readCurrentPosition({ enableHighAccuracy: false, maximumAge: 600000, timeout: 8000 }),
-    () => readCurrentPosition({ enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 }),
+    () => readCurrentPosition({ enableHighAccuracy: true, maximumAge: 60000, timeout: 9000 }),
+    () => readCurrentPosition({ enableHighAccuracy: false, maximumAge: 600000, timeout: 7000 }),
     () => watchPositionOnce({ enableHighAccuracy: false, maximumAge: 600000 }, 12000)
   ];
   let lastError: unknown;
