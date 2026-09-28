@@ -65,23 +65,32 @@ function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
   });
 }
 
-function stationMatchesQuery(station: Station, query: string): boolean {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) {
-    return true;
+function geolocationErrorMessage(error: unknown): string {
+  const code = typeof error === "object" && error !== null && "code" in error ? Number((error as { code?: number }).code) : 0;
+
+  if (typeof window !== "undefined" && !window.isSecureContext && window.location.hostname !== "localhost") {
+    return "La posizione funziona solo su HTTPS. Apri il sito dal dominio sicuro e riprova.";
   }
 
-  return [station.name, station.brand, station.address, station.cityName, station.provinceName, station.regionName]
-    .join(" ")
-    .toLowerCase()
-    .includes(normalizedQuery);
+  if (code === 1) {
+    return "Permesso posizione non attivo. Abilita la posizione nel browser e premi di nuovo Posizionami.";
+  }
+
+  if (code === 2) {
+    return "Posizione non disponibile in questo momento. Puoi scegliere una provincia e premere Trova.";
+  }
+
+  if (code === 3) {
+    return "La richiesta posizione e scaduta. Riprova tra qualche secondo o scegli una provincia.";
+  }
+
+  return "Non riesco a usare la tua posizione. Controlla i permessi del browser o scegli una provincia.";
 }
 
 export function MapExperience({ cities, provinces, initialCity, initialProvince, stations, statistic }: MapExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
   const [provinceId, setProvinceId] = useState(initialProvince.id);
-  const [query, setQuery] = useState("");
   const [searchVersion, setSearchVersion] = useState(0);
   const [visibleStations, setVisibleStations] = useState(stations);
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
@@ -105,12 +114,10 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
 
   const orderedStations = useMemo(
     () =>
-      sortStationsByPrice(visibleStations, fuelType, serviceMode).filter(
-        (station) => getStationPrice(station, fuelType, serviceMode) && stationMatchesQuery(station, query)
-      ),
-    [fuelType, query, serviceMode, visibleStations]
+      sortStationsByPrice(visibleStations, fuelType, serviceMode).filter((station) => getStationPrice(station, fuelType, serviceMode)),
+    [fuelType, serviceMode, visibleStations]
   );
-  const mapStations = orderedStations.length > 0 || query ? orderedStations : visibleStations;
+  const mapStations = orderedStations;
   const cheapestPrice = orderedStations.map((station) => getStationPrice(station, fuelType, serviceMode)?.price).find(Boolean);
   const savingOnTank = cheapestPrice ? Math.max(0, (currentStatistic.averagePrice - cheapestPrice) * 50) : 0;
 
@@ -152,12 +159,12 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
     setError("");
 
     try {
-      const position = await readBrowserPosition({ enableHighAccuracy: true, maximumAge: 60000, timeout: 9000 }).catch(() =>
-        readBrowserPosition({ enableHighAccuracy: false, maximumAge: 300000, timeout: 15000 })
+      const position = await readBrowserPosition({ enableHighAccuracy: false, maximumAge: 300000, timeout: 12000 }).catch(() =>
+        readBrowserPosition({ enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 })
       );
       handleUserPositionChange(position, true);
-    } catch {
-      setError("Non riesco a usare la tua posizione. Controlla i permessi del browser o scegli una provincia.");
+    } catch (positionError) {
+      setError(geolocationErrorMessage(positionError));
     } finally {
       setIsLoading(false);
     }
@@ -258,10 +265,8 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           onRequestPosition={requestUserPosition}
           onServiceModeChange={setServiceMode}
           provinces={provinces}
-          query={query}
           selectedProvinceId={selectedProvince.id}
           serviceMode={serviceMode}
-          setQuery={setQuery}
         />
         <DynamicStationMap
           city={selectedCity}
@@ -272,14 +277,15 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           userPosition={isUsingUserPosition ? userPosition : null}
           onUserPositionChange={(position) => handleUserPositionChange(position, true)}
           className="h-[58dvh] min-h-[430px] overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
+          showLocationControl={false}
         />
         <button
           type="button"
           className="absolute bottom-4 left-1/2 z-[650] inline-flex -translate-x-1/2 items-center gap-2 rounded-md bg-ink px-4 py-3 text-sm font-black text-white shadow-soft transition hover:bg-petrol"
           onClick={() => setSearchVersion((version) => version + 1)}
         >
-          <RefreshCw size={16} aria-hidden="true" />
-          Aggiorna mappa
+          <Search size={16} aria-hidden="true" />
+          Trova
         </button>
       </div>
 
@@ -333,10 +339,8 @@ function MapFilters({
   onRequestPosition,
   onServiceModeChange,
   provinces,
-  query,
   selectedProvinceId,
-  serviceMode,
-  setQuery
+  serviceMode
 }: {
   fuelType: FuelTypeCode;
   isLoading: boolean;
@@ -346,25 +350,13 @@ function MapFilters({
   onRequestPosition: () => void;
   onServiceModeChange: (mode: ServiceMode) => void;
   provinces: Province[];
-  query: string;
   selectedProvinceId: number;
   serviceMode: ServiceMode;
-  setQuery: (query: string) => void;
 }) {
   const sortedProvinces = useMemo(() => [...provinces].sort((left, right) => left.name.localeCompare(right.name, "it")), [provinces]);
 
   return (
     <div className="absolute left-3 right-3 top-3 z-[650] grid max-w-3xl gap-2 sm:left-4 sm:right-auto sm:w-[min(720px,calc(100%-2rem))]">
-      <label className="relative block">
-        <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink/42" size={20} aria-hidden="true" />
-        <input
-          className="h-12 w-full rounded-md border border-ink/15 bg-white/96 px-12 text-base font-bold text-ink shadow-soft outline-none backdrop-blur transition placeholder:text-ink/45 focus:border-petrol"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Indirizzo, citta o codice postale"
-          aria-label="Cerca indirizzo, citta o distributore"
-        />
-      </label>
       <div className="flex flex-wrap gap-2">
         <label className="relative">
           <Fuel className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-petrol" size={16} aria-hidden="true" />
@@ -421,13 +413,14 @@ function MapFilters({
         </button>
         <button
           type="button"
-          className="grid size-11 place-items-center rounded-md border border-ink/15 bg-white/96 text-petrol shadow-sm transition hover:border-petrol/45"
-          aria-label="Aggiorna risultati"
-          title="Aggiorna risultati"
+          className="inline-flex h-11 items-center gap-2 rounded-md bg-ink px-4 text-sm font-black text-white shadow-sm transition hover:bg-petrol"
+          aria-label="Trova distributori"
+          title="Trova distributori"
           onClick={onRefresh}
           disabled={isLoading}
         >
-          <RefreshCw className={isLoading ? "animate-spin" : ""} size={18} aria-hidden="true" />
+          {isLoading ? <RefreshCw className="animate-spin" size={17} aria-hidden="true" /> : <Search size={17} aria-hidden="true" />}
+          Trova
         </button>
       </div>
     </div>

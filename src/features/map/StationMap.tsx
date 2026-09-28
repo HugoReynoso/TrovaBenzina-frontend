@@ -23,6 +23,7 @@ interface StationMapProps {
   userPosition?: { latitude: number; longitude: number } | null;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
   className?: string;
+  showLocationControl?: boolean;
 }
 
 function markerIcon(brand: string, price: number, averagePrice: number) {
@@ -172,7 +173,17 @@ function CityMapController({ city, userPosition }: { city: City; userPosition?: 
   return null;
 }
 
-export function StationMap({ city, stations, fuelType, serviceMode, averagePrice, userPosition, onUserPositionChange, className }: StationMapProps) {
+export function StationMap({
+  city,
+  stations,
+  fuelType,
+  serviceMode,
+  averagePrice,
+  userPosition,
+  onUserPositionChange,
+  className,
+  showLocationControl = true
+}: StationMapProps) {
   const [zoom, setZoom] = useState(12);
   const precision = clusterPrecision(zoom);
   const clusters = useMemo(() => buildClusters(stations, precision), [precision, stations]);
@@ -186,7 +197,7 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
         />
         <ZoomTracker onZoomChange={setZoom} />
         <CityMapController city={city} userPosition={userPosition} />
-        <LocationControl onUserPositionChange={onUserPositionChange} />
+        {showLocationControl ? <LocationControl onUserPositionChange={onUserPositionChange} /> : null}
         {userPosition ? (
           <CircleMarker
             center={[userPosition.latitude, userPosition.longitude]}
