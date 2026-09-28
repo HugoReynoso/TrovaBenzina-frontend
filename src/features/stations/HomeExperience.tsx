@@ -82,6 +82,28 @@ function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
   });
 }
 
+function geolocationErrorMessage(error: unknown): string {
+  const code = typeof error === "object" && error !== null && "code" in error ? Number((error as { code?: number }).code) : 0;
+
+  if (typeof window !== "undefined" && !window.isSecureContext && window.location.hostname !== "localhost") {
+    return "La posizione funziona solo su HTTPS. Apri il sito dal dominio sicuro e riprova.";
+  }
+
+  if (code === 1) {
+    return "Permesso posizione non attivo. Abilita la posizione nel browser e premi di nuovo Usa la mia posizione.";
+  }
+
+  if (code === 2) {
+    return "Posizione non disponibile in questo momento. Puoi scegliere una provincia e premere Trova.";
+  }
+
+  if (code === 3) {
+    return "La richiesta posizione e scaduta. Riprova tra qualche secondo o scegli una provincia.";
+  }
+
+  return "Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.";
+}
+
 export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, showTitle = true }: HomeExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
@@ -163,26 +185,26 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
     try {
       const position = await readBrowserPosition({
-        enableHighAccuracy: true,
-        maximumAge: 60000,
-        timeout: 9000
+        enableHighAccuracy: false,
+        maximumAge: 300000,
+        timeout: 12000
       }).catch(() =>
         readBrowserPosition({
-          enableHighAccuracy: false,
-          maximumAge: 300000,
-          timeout: 15000
+          enableHighAccuracy: true,
+          maximumAge: 60000,
+          timeout: 8000
         })
       );
 
       handleUserPositionChange(position, true);
-    } catch {
+    } catch (positionError) {
       if (userPosition) {
         handleUserPositionChange(userPosition, true);
         setError("");
         return;
       }
 
-      setError("Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.");
+      setError(geolocationErrorMessage(positionError));
     } finally {
       setIsLoading(false);
     }
