@@ -189,8 +189,8 @@ export function StationMap({ city, stations, fuelType, serviceMode, averagePrice
         {userPosition ? (
           <CircleMarker
             center={[userPosition.latitude, userPosition.longitude]}
-            pathOptions={{ color: "#165A67", fillColor: "#1F9D68", fillOpacity: 0.28, weight: 3 }}
-            radius={12}
+            pathOptions={{ color: "#991B1B", fillColor: "#EF4444", fillOpacity: 0.62, weight: 4 }}
+            radius={16}
           >
             <Popup>Sei qui</Popup>
           </CircleMarker>
