@@ -8,7 +8,6 @@ import Link from "next/link";
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { BrandLogo } from "@/components/BrandLogo";
 import { escapeHtml, getFuelBrand } from "@/lib/brand";
-import { requestBrowserPosition } from "@/lib/geolocation";
 import { formatEuro, getPriceTone, getStationPrice } from "@/lib/price";
 import { withBasePath } from "@/lib/site";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -105,26 +104,36 @@ function LocationControl({ onUserPositionChange }: { onUserPositionChange?: (pos
   const map = useMap();
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
 
-  async function requestPosition(focusMap = true) {
-    setStatus("loading");
-
-    try {
-      const nextPosition = await requestBrowserPosition();
-      setStatus("ready");
-
-      if (focusMap) {
-        onUserPositionChange?.(nextPosition);
-        map.setView([nextPosition.latitude, nextPosition.longitude], Math.max(map.getZoom(), 14), { animate: true });
-      }
-    } catch {
+  function requestPosition(focusMap = true) {
+    if (!navigator.geolocation) {
       setStatus("unavailable");
+      return;
     }
-  }
 
-  useEffect(() => {
-    requestPosition(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (location) => {
+        const nextPosition = {
+          lat: location.coords.latitude,
+          lng: location.coords.longitude
+        };
+        setStatus("ready");
+
+        if (focusMap) {
+          onUserPositionChange?.({ latitude: nextPosition.lat, longitude: nextPosition.lng });
+          map.setView([nextPosition.lat, nextPosition.lng], Math.max(map.getZoom(), 14), { animate: true });
+        }
+      },
+      () => {
+        setStatus("unavailable");
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 60000,
+        timeout: 9000
+      }
+    );
+  }
 
   const label = status === "loading" ? "Cerco..." : status === "ready" ? "Posizione" : "Posizionami";
 

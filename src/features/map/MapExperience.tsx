@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Fuel, Heart, LocateFixed, Map as MapIcon, RefreshCw, Route, Search, SlidersHorizontal } from "lucide-react";
+import { Fuel, Heart, Map as MapIcon, RefreshCw, Route, Search, SlidersHorizontal } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { canUseBrowserPosition, geolocationErrorMessage, requestBrowserPosition } from "@/lib/geolocation";
 import { formatEuro, getStationPrice, sortStationsByPrice } from "@/lib/price";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -65,7 +64,6 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState("");
   const userSelectedProvinceRef = useRef(false);
   const dataCacheRef = useRef(new Map<string, LoadedMapData>());
@@ -118,29 +116,6 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
       setSearchVersion((version) => version + 1);
     }
   }, [cities]);
-
-  async function requestUserPosition() {
-    if (isLocating) {
-      return;
-    }
-
-    if (!canUseBrowserPosition()) {
-      setError("Geolocalizzazione non disponibile su questo dispositivo.");
-      return;
-    }
-
-    setIsLocating(true);
-    setError("");
-
-    try {
-      const position = await requestBrowserPosition();
-      handleUserPositionChange(position, true);
-    } catch (positionError) {
-      setError(geolocationErrorMessage(positionError, "Posizionami"));
-    } finally {
-      setIsLocating(false);
-    }
-  }
 
   useEffect(() => {
     const shouldUseUserPosition = isUsingUserPosition;
@@ -228,14 +203,12 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
         <MapFilters
           fuelType={fuelType}
           isLoading={isLoading}
-          isLocating={isLocating}
           onFuelChange={handleFuelChange}
           onProvinceChange={(nextProvinceId) => {
             userSelectedProvinceRef.current = true;
             setProvinceId(nextProvinceId);
           }}
           onRefresh={() => setSearchVersion((version) => version + 1)}
-          onRequestPosition={requestUserPosition}
           onServiceModeChange={setServiceMode}
           provinces={provinces}
           selectedProvinceId={selectedProvince.id}
@@ -250,7 +223,6 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           userPosition={isUsingUserPosition ? userPosition : null}
           onUserPositionChange={(position) => handleUserPositionChange(position, true)}
           className="h-[58dvh] min-h-[430px] overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
-          showLocationControl={false}
         />
       </div>
 
@@ -298,11 +270,9 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
 function MapFilters({
   fuelType,
   isLoading,
-  isLocating,
   onFuelChange,
   onProvinceChange,
   onRefresh,
-  onRequestPosition,
   onServiceModeChange,
   provinces,
   selectedProvinceId,
@@ -310,11 +280,9 @@ function MapFilters({
 }: {
   fuelType: FuelTypeCode;
   isLoading: boolean;
-  isLocating: boolean;
   onFuelChange: (fuelType: FuelTypeCode) => void;
   onProvinceChange: (provinceId: number) => void;
   onRefresh: () => void;
-  onRequestPosition: () => void;
   onServiceModeChange: (mode: ServiceMode) => void;
   provinces: Province[];
   selectedProvinceId: number;
@@ -369,15 +337,6 @@ function MapFilters({
           title="Preferiti"
         >
           <Heart size={21} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className="inline-flex h-11 items-center gap-2 rounded-md bg-petrol px-3 text-sm font-black text-white shadow-sm transition hover:bg-[#104955]"
-          onClick={onRequestPosition}
-          disabled={isLocating}
-        >
-          <LocateFixed className={isLocating ? "animate-pulse" : undefined} size={17} aria-hidden="true" />
-          <span className="hidden sm:inline">{isLocating ? "Cerco..." : "Posizionami"}</span>
         </button>
         <button
           type="button"

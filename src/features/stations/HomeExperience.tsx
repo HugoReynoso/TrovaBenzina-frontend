@@ -15,7 +15,6 @@ import { StatsCards } from "@/features/statistics/StatsCards";
 import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { canUseBrowserPosition, geolocationErrorMessage, requestBrowserPosition } from "@/lib/geolocation";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { sortStationsByPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -66,6 +65,26 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
     cities.find((city) => city.provinceId === province.id) ??
     fallbackCity
   );
+}
+
+function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation unavailable"));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+      },
+      reject,
+      options
+    );
+  });
 }
 
 export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, showTitle = true }: HomeExperienceProps) {
@@ -144,7 +163,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       return;
     }
 
-    if (!canUseBrowserPosition()) {
+    if (!navigator.geolocation) {
       setError("Geolocalizzazione non disponibile su questo dispositivo.");
       return;
     }
@@ -153,16 +172,27 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     setError("");
 
     try {
-      const position = await requestBrowserPosition();
+      const position = await readBrowserPosition({
+        enableHighAccuracy: true,
+        maximumAge: 60000,
+        timeout: 9000
+      }).catch(() =>
+        readBrowserPosition({
+          enableHighAccuracy: false,
+          maximumAge: 300000,
+          timeout: 15000
+        })
+      );
+
       handleUserPositionChange(position, true);
-    } catch (positionError) {
+    } catch {
       if (userPosition) {
         handleUserPositionChange(userPosition, true);
         setError("");
         return;
       }
 
-      setError(geolocationErrorMessage(positionError, "Usa la mia posizione"));
+      setError("Non riesco a usare la tua posizione. Controlla i permessi del browser oppure scegli una provincia.");
     } finally {
       setIsLocating(false);
     }
