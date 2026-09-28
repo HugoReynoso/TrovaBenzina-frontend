@@ -105,13 +105,16 @@ function buildClusters(stations: Station[], precision: number | null): StationCl
 function LocationControl({
   locateRequestId = 0,
   onLocationStatusChange,
-  onUserPositionChange
+  onUserPositionChange,
+  userPosition
 }: {
   locateRequestId?: number;
   onLocationStatusChange?: (status: "idle" | "loading" | "ready" | "unavailable") => void;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
+  userPosition?: { latitude: number; longitude: number } | null;
 }) {
   const map = useMap();
+  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
 
   function updateStatus(nextStatus: "idle" | "loading" | "ready" | "unavailable") {
@@ -132,6 +135,7 @@ function LocationControl({
           lat: location.coords.latitude,
           lng: location.coords.longitude
         };
+        setPosition(nextPosition);
         updateStatus("ready");
 
         if (focusMap) {
@@ -158,6 +162,7 @@ function LocationControl({
   }, [locateRequestId]);
 
   const label = status === "loading" ? "Cerco..." : status === "ready" ? "Posizione" : "Posizionami";
+  const displayedPosition = userPosition ? { lat: userPosition.latitude, lng: userPosition.longitude } : position;
 
   return (
     <>
@@ -171,6 +176,15 @@ function LocationControl({
         <LocateFixed size={16} aria-hidden="true" />
         <span className="hidden sm:inline">{label}</span>
       </button>
+      {displayedPosition ? (
+        <CircleMarker
+          center={[displayedPosition.lat, displayedPosition.lng]}
+          pathOptions={{ color: "#991B1B", fillColor: "#EF4444", fillOpacity: 0.62, weight: 4 }}
+          radius={16}
+        >
+          <Popup>Sei qui</Popup>
+        </CircleMarker>
+      ) : null}
     </>
   );
 }
@@ -221,16 +235,8 @@ export function StationMap({
             locateRequestId={locateRequestId}
             onLocationStatusChange={onLocationStatusChange}
             onUserPositionChange={onUserPositionChange}
+            userPosition={userPosition}
           />
-        ) : null}
-        {userPosition ? (
-          <CircleMarker
-            center={[userPosition.latitude, userPosition.longitude]}
-            pathOptions={{ color: "#991B1B", fillColor: "#EF4444", fillOpacity: 0.62, weight: 4 }}
-            radius={16}
-          >
-            <Popup>Sei qui</Popup>
-          </CircleMarker>
         ) : null}
         {clusters.map((cluster) => {
           if (cluster.stations.length > 1) {
