@@ -19,7 +19,7 @@ export function buildCityFuelStatistic(city: City, fuelType: FuelTypeCode, stati
       minimumPrice: 0,
       maximumPrice: 0,
       stationCount: 0,
-      updatedAt: new Date().toISOString()
+      updatedAt: ""
     };
   }
 
@@ -31,6 +31,6 @@ export function buildCityFuelStatistic(city: City, fuelType: FuelTypeCode, stati
     minimumPrice: Math.min(...values),
     maximumPrice: Math.max(...values),
     stationCount: new Set(stations.filter((station) => station.prices.some((price) => price.fuelTypeCode === fuelType)).map((station) => station.id)).size,
-    updatedAt: latestUpdate ?? new Date().toISOString()
+    updatedAt: latestUpdate ?? ""
   };
 }

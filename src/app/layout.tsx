@@ -1,30 +1,21 @@
 import type { Metadata } from "next";
 import { RouteLoadingIndicator } from "@/components/RouteLoadingIndicator";
 import { alternateLanguages } from "@/lib/i18n";
+import { defaultOgImage, siteName, siteUrl } from "@/lib/seo";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.trovabenzina.it"),
-  applicationName: "TrovaBenzina",
+  metadataBase: new URL(siteUrl),
+  applicationName: siteName,
   title: {
-    default: "TrovaBenzina - Trova il pieno che fa meno male",
-    template: "%s | TrovaBenzina"
+    default: "TrovaBenzina | Prezzi benzina, diesel e GPL in Italia",
+    template: `%s | ${siteName}`
   },
   description:
-    "Trova distributori economici vicino a te, confronta prezzi benzina, diesel, GPL e metano su mappa e consulta statistiche carburante in Italia.",
-  keywords: [
-    "prezzo benzina",
-    "prezzo diesel",
-    "distributori economici",
-    "benzina vicino a me",
-    "GPL",
-    "metano",
-    "carburanti Italia",
-    "TrovaBenzina"
-  ],
-  authors: [{ name: "TrovaBenzina" }],
-  creator: "TrovaBenzina",
-  publisher: "TrovaBenzina",
+    "Confronta i prezzi di benzina, diesel e GPL nei distributori italiani. Trova i distributori piu economici, consulta la mappa e verifica la data dell'ultimo prezzo comunicato.",
+  authors: [{ name: siteName, url: siteUrl }],
+  creator: siteName,
+  publisher: siteName,
   formatDetection: {
     telephone: false,
     address: false,
@@ -34,16 +25,21 @@ export const metadata: Metadata = {
     canonical: "/",
     languages: alternateLanguages
   },
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg"
+  },
   openGraph: {
-    title: "TrovaBenzina - Prezzi carburante vicino a te",
-    description: "Confronta distributori, prezzi carburante e stazioni economiche sulla mappa.",
-    url: "https://www.trovabenzina.it",
+    title: "TrovaBenzina | Prezzi carburante in Italia",
+    description: "Confronta distributori, prezzi carburante e stazioni economiche sulla mappa con dati disponibili MIMIT.",
+    url: siteUrl,
     type: "website",
     locale: "it_IT",
-    siteName: "TrovaBenzina",
+    siteName,
     images: [
       {
-        url: "/brand/trovabenzina-concept.png",
+        url: defaultOgImage,
         width: 1200,
         height: 630,
         alt: "TrovaBenzina - mappa prezzi carburante"
@@ -52,9 +48,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "TrovaBenzina - Prezzi carburante vicino a te",
-    description: "Trova distributori economici, benzina, diesel, GPL e metano sulla mappa.",
-    images: ["/brand/trovabenzina-concept.png"]
+    title: "TrovaBenzina | Prezzi carburante in Italia",
+    description: "Trova distributori economici, benzina, diesel e GPL sulla mappa.",
+    images: [defaultOgImage]
   },
   robots: {
     index: true,
@@ -63,24 +59,28 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "TrovaBenzina",
-    description: "Trova distributori economici e confronta i prezzi carburante in Italia.",
-    url: "https://www.trovabenzina.it",
-    inLanguage: "it-IT",
-    publisher: {
-      "@type": "Organization",
-      name: "TrovaBenzina",
-      url: "https://www.trovabenzina.it"
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: siteName,
+      description: "Trova distributori economici e confronta i prezzi carburante in Italia.",
+      url: siteUrl,
+      inLanguage: "it-IT",
+      publisher: {
+        "@type": "Organization",
+        name: siteName,
+        url: siteUrl
+      }
     },
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://www.trovabenzina.it/prezzo-benzina/{search_term_string}",
-      "query-input": "required name=search_term_string"
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: siteName,
+      url: siteUrl,
+      logo: `${siteUrl}/brand/trovabenzina-logo.svg`
     }
-  };
+  ];
 
   return (
     <html lang="it" suppressHydrationWarning>

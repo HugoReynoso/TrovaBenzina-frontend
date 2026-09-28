@@ -29,6 +29,7 @@ interface HomeExperienceProps {
   initialProvince: Province;
   stations: Station[];
   statistic: CityFuelStatistic;
+  showTitle?: boolean;
 }
 
 interface LoadedCityData {
@@ -81,7 +82,7 @@ function readBrowserPosition(options: PositionOptions): Promise<UserPosition> {
   });
 }
 
-export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic }: HomeExperienceProps) {
+export function HomeExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, showTitle = true }: HomeExperienceProps) {
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
   const [provinceId, setProvinceId] = useState(initialProvince.id);
@@ -303,11 +304,15 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
         <div className="grid gap-3 md:gap-4">
           <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:gap-4 md:p-4">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h1 className="text-xl font-black leading-tight text-ink md:text-4xl">
-                  Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
-                </h1>
-              </div>
+              {showTitle ? (
+                <div className="min-w-0">
+                  <h1 className="text-xl font-black leading-tight text-ink md:text-4xl">
+                    Prezzo {fuelType.toLowerCase()} in provincia di {selectedProvince.name}
+                  </h1>
+                </div>
+              ) : (
+                <p className="min-w-0 text-sm font-black uppercase tracking-[0.08em] text-ink/56">Filtra prezzi e distributori</p>
+              )}
               <button
                 type="button"
                 className="grid size-11 shrink-0 place-items-center rounded-md bg-petrol text-white shadow-sm transition hover:bg-[#104955] md:hidden"

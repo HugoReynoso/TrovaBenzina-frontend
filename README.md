@@ -65,7 +65,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 - Form segnalazione prezzo con ricerca citta e caricamento distributori reali
 - Admin login tramite backend, token JWT e chiamate protette
 - Loading e error state per lentezza o indisponibilita backend
-- SEO con metadata, canonical, sitemap e robots
+- SEO con metadata, canonical, Open Graph, sitemap, robots, breadcrumb JSON-LD e contenuti server-rendered per pagine carburante/citta
 
 ## Route Principali
 
@@ -83,6 +83,8 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 ## Backend API
 
 Il frontend usa JSON camelCase dal backend Spring Boot.
+
+Durante la build statica GitHub Pages gli endpoint vengono letti in fase di generazione. Per questo serve una `NEXT_PUBLIC_API_BASE_URL` raggiungibile dalla pipeline se si vogliono pubblicare dati reali invece dei dati demo.
 
 Endpoint pubblici:
 
@@ -116,14 +118,9 @@ Authorization: Bearer <token>
 ## Comandi
 
 ```bash
+npm run lint
 npm run build
 npm run test
-```
-
-Il progetto ha anche lo script:
-
-```bash
-npm run lint
 ```
 
 ## Deploy GitHub Pages
@@ -159,7 +156,9 @@ necessario per servire correttamente asset e pagine da GitHub Pages.
 
 ## Note SEO
 
-- Le pagine pubbliche espongono metadata e canonical.
-- La sitemap include homepage, pagine carburante/citta principali, storico, accise, notizie e segnalazione.
-- `/admin` e `noindex`.
-- Le pagine citta generate staticamente sono limitate alle citta SEO principali per evitare build troppo pesanti.
+- Le pagine pubbliche espongono title, description, canonical, Open Graph e Twitter card.
+- Le pagine `/prezzo-benzina/[city]`, `/prezzo-diesel/[city]` e `/prezzo-gpl/[city]` includono intro testuale server-rendered, breadcrumb, dati strutturati, prezzi minimi/medi e link interni tra carburanti e citta correlate.
+- La sitemap include homepage, pagine carburante/citta principali, storico benzina, accise, notizie e segnalazione senza usare `new Date()` come data fittizia per ogni URL.
+- `/admin` e `noindex` ed e esclusa da `robots.txt` insieme a `/api`.
+- Gli slug citta e news non previsti dai parametri statici vanno in 404 invece di creare pagine sottili o duplicate.
+- Le pagine citta generate staticamente sono limitate alle citta SEO principali per evitare build troppo pesanti. Quando il backend avra dati reali e completi si potranno ampliare progressivamente province e comuni.

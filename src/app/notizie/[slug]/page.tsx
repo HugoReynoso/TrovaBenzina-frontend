@@ -4,24 +4,41 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { mockNews } from "@/mocks/news";
+import { absoluteUrl, breadcrumbJsonLd, defaultOgImage, siteName, siteUrl } from "@/lib/seo";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+export const dynamicParams = false;
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = mockNews.find((item) => item.slug === slug);
+
+  if (!article) {
+    notFound();
+  }
+
   return {
-    title: article?.title ?? "Notizia",
-    description: article?.excerpt,
+    title: article.title,
+    description: article.excerpt,
     alternates: { canonical: `/notizie/${slug}` },
     openGraph: {
-      title: article?.title ?? "Notizia TrovaBenzina",
-      description: article?.excerpt,
+      title: article.title,
+      description: article.excerpt,
       url: `/notizie/${slug}`,
       type: "article",
-      publishedTime: article?.date
+      publishedTime: article.date,
+      siteName,
+      locale: "it_IT",
+      images: [{ url: defaultOgImage, width: 1200, height: 630, alt: article.title }]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt,
+      images: [defaultOgImage]
     }
   };
 }
@@ -38,53 +55,34 @@ export default async function NewsArticlePage({ params }: PageProps) {
     notFound();
   }
 
-  const articleUrl = `https://www.trovabenzina.it/notizie/${article.slug}`;
+  const articleUrl = absoluteUrl(`/notizie/${article.slug}`);
   const jsonLd = [
     {
       "@context": "https://schema.org",
       "@type": "Article",
       headline: article.title,
       description: article.excerpt,
-      image: `https://www.trovabenzina.it${article.image}`,
+      image: `${siteUrl}${defaultOgImage}`,
       datePublished: article.date,
       dateModified: article.date,
       author: {
         "@type": "Organization",
-        name: "TrovaBenzina"
+        name: siteName
       },
       publisher: {
         "@type": "Organization",
-        name: "TrovaBenzina",
-        url: "https://www.trovabenzina.it"
+        name: siteName,
+        url: siteUrl
       },
       mainEntityOfPage: articleUrl,
       inLanguage: "it-IT",
       articleSection: article.category
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Home",
-          item: "https://www.trovabenzina.it"
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "Notizie",
-          item: "https://www.trovabenzina.it/notizie"
-        },
-        {
-          "@type": "ListItem",
-          position: 3,
-          name: article.title,
-          item: articleUrl
-        }
-      ]
-    }
+    breadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: "Notizie", path: "/notizie" },
+      { name: article.title, path: `/notizie/${article.slug}` }
+    ])
   ];
 
   return (

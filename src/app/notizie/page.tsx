@@ -3,11 +3,26 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { mockNews } from "@/mocks/news";
+import { defaultOgImage, siteName, siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Notizie Carburanti",
   description: "Guide e aggiornamenti su prezzi carburanti, accise, self service e risparmio alla pompa.",
-  alternates: { canonical: "/notizie" }
+  alternates: { canonical: "/notizie" },
+  openGraph: {
+    title: `Notizie Carburanti | ${siteName}`,
+    description: "Guide e aggiornamenti su prezzi carburanti, accise, self service e risparmio alla pompa.",
+    url: "/notizie",
+    type: "website",
+    locale: "it_IT",
+    images: [{ url: defaultOgImage, width: 1200, height: 630, alt: `${siteName} - guide carburanti` }]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Notizie Carburanti | ${siteName}`,
+    description: "Guide e aggiornamenti su prezzi carburanti, accise, self service e risparmio alla pompa.",
+    images: [defaultOgImage]
+  }
 };
 
 export default function NewsPage() {
@@ -16,14 +31,14 @@ export default function NewsPage() {
     "@type": "CollectionPage",
     name: "Notizie carburanti",
     description: "Guide e aggiornamenti su prezzi carburanti, accise, self service e risparmio alla pompa.",
-    url: "https://www.trovabenzina.it/notizie",
+    url: `${siteUrl}/notizie`,
     inLanguage: "it-IT",
     hasPart: mockNews.map((article) => ({
       "@type": "Article",
       headline: article.title,
       description: article.excerpt,
       datePublished: article.date,
-      url: `https://www.trovabenzina.it/notizie/${article.slug}`
+      url: `${siteUrl}/notizie/${article.slug}`
     }))
   };
 

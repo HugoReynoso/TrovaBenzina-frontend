@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
@@ -6,8 +7,9 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/"
+      allow: "/",
+      disallow: ["/admin", "/api"]
     },
-    sitemap: "https://www.trovabenzina.it/sitemap.xml"
+    sitemap: `${siteUrl}/sitemap.xml`
   };
 }

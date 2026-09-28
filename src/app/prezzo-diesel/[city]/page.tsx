@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { FuelCitySeo } from "@/features/seo/FuelCitySeo";
 import { CitySummary } from "@/features/statistics/CitySummary";
 import { FuelComposition } from "@/features/statistics/FuelComposition";
 import { StatsCards } from "@/features/statistics/StatsCards";
@@ -8,26 +10,24 @@ import { CheapestStations } from "@/features/stations/CheapestStations";
 import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCities, getCityBySlug } from "@/lib/api/cities";
 import { getFuelPageData } from "@/lib/api/fuel-page";
+import { buildCityFuelMetadata } from "@/lib/seo";
 import { getSeoCities } from "@/lib/seo-cities";
 
 interface PageProps {
   params: Promise<{ city: string }>;
 }
 
+export const dynamicParams = false;
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { city } = await params;
-  const resolvedCity = await getCityBySlug(city);
-  return {
-    title: `Prezzo Diesel ${resolvedCity?.name ?? city} Oggi - Distributori piu Economici`,
-    description: `Prezzo diesel a ${resolvedCity?.name ?? city} oggi: confronta distributori economici, self service e prezzi aggiornati.`,
-    alternates: { canonical: `/prezzo-diesel/${city}` },
-    openGraph: {
-      title: `Prezzo diesel a ${resolvedCity?.name ?? city} oggi`,
-      description: `Mappa distributori e prezzi diesel aggiornati per ${resolvedCity?.name ?? city}.`,
-      url: `/prezzo-diesel/${city}`,
-      type: "website"
-    }
-  };
+  const { city: citySlug } = await params;
+  const city = await getCityBySlug(citySlug);
+
+  if (!city) {
+    notFound();
+  }
+
+  return buildCityFuelMetadata(city, "DIESEL");
 }
 
 export async function generateStaticParams() {
@@ -38,14 +38,19 @@ export async function generateStaticParams() {
 export default async function DieselCityPage({ params }: PageProps) {
   const { city: citySlug } = await params;
   const cities = await getCities();
-  const city = (await getCityBySlug(citySlug)) ?? cities[0];
+  const city = cities.find((item) => item.slug === citySlug);
+
+  if (!city) {
+    notFound();
+  }
+
   const { stations, statistic } = await getFuelPageData(city, "DIESEL", { serviceMode: "self", useCheapest: true, limit: 10 });
 
   return (
     <>
       <Header />
+      <FuelCitySeo city={city} cities={getSeoCities(cities)} fuelType="DIESEL" stations={stations} statistic={statistic} serviceMode="self" />
       <main className="mx-auto grid max-w-7xl gap-5 px-4 py-6 md:px-6">
-        <h1 className="text-3xl font-black text-ink">Prezzo diesel a {city.name} oggi</h1>
         <StatsCards statistic={statistic} />
         <CheapestStations stations={stations} fuelType="DIESEL" serviceMode="self" cityName={city.name} />
         <CitySummary city={city} statistic={statistic} />

@@ -1,0 +1,158 @@
+import Link from "next/link";
+import { formatEuro, getStationPrice, sortStationsByPrice } from "@/lib/price";
+import { breadcrumbJsonLd, cityFuelPath, fuelSeo } from "@/lib/seo";
+import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
+import type { City } from "@/types/location";
+import type { Station } from "@/types/station";
+import type { CityFuelStatistic } from "@/types/statistics";
+
+interface FuelCitySeoProps {
+  city: City;
+  cities: City[];
+  fuelType: Extract<FuelTypeCode, "BENZINA" | "DIESEL" | "GPL">;
+  stations: Station[];
+  statistic: CityFuelStatistic;
+  serviceMode?: ServiceMode;
+}
+
+function formatDate(value?: string): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "long", year: "numeric" }).format(date);
+}
+
+function latestCommunication(stations: Station[], fuelType: FuelTypeCode): string | null {
+  const latest = stations
+    .flatMap((station) => station.prices.filter((price) => price.fuelTypeCode === fuelType).map((price) => price.communicatedAt))
+    .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
+
+  return formatDate(latest);
+}
+
+function relatedCities(city: City, cities: City[]): City[] {
+  const sameRegion = cities.filter((item) => item.slug !== city.slug && item.regionName === city.regionName);
+  const sameProvince = cities.filter((item) => item.slug !== city.slug && item.provinceId === city.provinceId);
+  const combined = [...sameProvince, ...sameRegion].filter((item, index, all) => all.findIndex((candidate) => candidate.slug === item.slug) === index);
+
+  return combined.slice(0, 4);
+}
+
+export function FuelCitySeo({ city, cities, fuelType, stations, statistic, serviceMode }: FuelCitySeoProps) {
+  const fuel = fuelSeo[fuelType];
+  const mode = serviceMode ?? fuel.serviceMode;
+  const topStations = sortStationsByPrice(stations, fuelType, mode)
+    .filter((station) => getStationPrice(station, fuelType, mode))
+    .slice(0, 5);
+  const latestDate = latestCommunication(stations, fuelType) ?? formatDate(statistic.updatedAt);
+  const relatedFuelTypes = (["BENZINA", "DIESEL", "GPL"] as const).filter((item) => item !== fuelType);
+  const nearbyCities = relatedCities(city, cities);
+  const breadcrumbs = [
+    { name: "Home", path: "/" },
+    { name: "Prezzi carburanti" },
+    { name: city.regionName },
+    { name: city.name },
+    { name: fuel.titleLabel, path: cityFuelPath(fuelType, city.slug) }
+  ];
+
+  return (
+    <section className="mx-auto grid max-w-7xl gap-4 px-4 pt-5 md:px-6" aria-labelledby="seo-intro">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }} />
+      <nav className="flex flex-wrap items-center gap-2 text-sm font-bold text-ink/58" aria-label="Breadcrumb">
+        <Link className="hover:text-petrol" href="/">
+          Home
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span>Prezzi carburanti</span>
+        <span aria-hidden="true">/</span>
+        <span>{city.regionName}</span>
+        <span aria-hidden="true">/</span>
+        <span className="text-ink">{city.name}</span>
+      </nav>
+      <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-4 shadow-sm">
+        <div className="grid gap-2">
+          <p className="text-sm font-black uppercase tracking-[0.08em] text-amber">Dati disponibili MIMIT</p>
+          <h1 id="seo-intro" className="text-2xl font-black leading-tight text-ink md:text-3xl">
+            Prezzi {fuel.label} a {city.name}
+          </h1>
+          <p className="max-w-4xl text-ink/70">
+            Consulta i prezzi {fuel.label} disponibili a {city.name} e confronta i distributori per trovare le opzioni piu convenienti. I dati sui prezzi
+            provengono dalle comunicazioni ufficiali disponibili tramite MIMIT e possono avere date di comunicazione diverse.
+          </p>
+        </div>
+        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-md bg-ink/[0.035] p-3">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">Prezzo minimo</dt>
+            <dd className="mt-1 text-lg font-black text-ink">{statistic.stationCount > 0 ? formatEuro(statistic.minimumPrice) : "Non disponibile"}</dd>
+          </div>
+          <div className="rounded-md bg-ink/[0.035] p-3">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">Prezzo medio</dt>
+            <dd className="mt-1 text-lg font-black text-ink">{statistic.stationCount > 0 ? formatEuro(statistic.averagePrice) : "Non disponibile"}</dd>
+          </div>
+          <div className="rounded-md bg-ink/[0.035] p-3">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">Distributori considerati</dt>
+            <dd className="mt-1 text-lg font-black text-ink">{statistic.stationCount}</dd>
+          </div>
+          <div className="rounded-md bg-ink/[0.035] p-3">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">Ultima comunicazione prezzo</dt>
+            <dd className="mt-1 text-lg font-black text-ink">{latestDate ?? "Non disponibile"}</dd>
+          </div>
+        </dl>
+        {topStations.length > 0 ? (
+          <div className="grid gap-2">
+            <h3 className="text-base font-black text-ink">Distributori piu convenienti rilevati</h3>
+            <ol className="grid gap-2 md:grid-cols-2">
+              {topStations.map((station) => {
+                const price = getStationPrice(station, fuelType, mode);
+                return (
+                  <li key={station.id} className="rounded-md border border-ink/10 p-3">
+                    <span className="block font-black text-ink">{station.name}</span>
+                    <span className="mt-1 block text-sm text-ink/64">{station.address}</span>
+                    <span className="mt-2 block text-sm font-black text-mint">{price ? formatEuro(price.price) : "Prezzo non disponibile"}</span>
+                    {price ? (
+                      <span className="mt-1 block text-xs font-bold text-ink/52">
+                        Comunicazione prezzo: {formatDate(price.communicatedAt) ?? "data non disponibile"}
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        ) : null}
+        <div className="grid gap-3 md:grid-cols-2">
+          <nav className="flex flex-wrap gap-2" aria-label={`Prezzi carburanti a ${city.name}`}>
+            {relatedFuelTypes.map((relatedFuelType) => (
+              <Link
+                key={relatedFuelType}
+                className="rounded-md border border-petrol/20 px-3 py-2 text-sm font-black text-petrol hover:border-petrol/45"
+                href={cityFuelPath(relatedFuelType, city.slug)}
+              >
+                {fuelSeo[relatedFuelType].titleLabel} {city.name}
+              </Link>
+            ))}
+          </nav>
+          {nearbyCities.length > 0 ? (
+            <nav className="flex flex-wrap gap-2 md:justify-end" aria-label="Localita correlate">
+              {nearbyCities.map((relatedCity) => (
+                <Link
+                  key={relatedCity.slug}
+                  className="rounded-md border border-ink/10 px-3 py-2 text-sm font-black text-ink/70 hover:border-petrol/35 hover:text-petrol"
+                  href={cityFuelPath(fuelType, relatedCity.slug)}
+                >
+                  {relatedCity.name}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
