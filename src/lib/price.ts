@@ -3,8 +3,8 @@ import type { Station, StationPrice } from "@/types/station";
 
 export type PriceTone = "cheap" | "average" | "high";
 
-export function formatEuro(value: number): string {
-  return new Intl.NumberFormat("it-IT", {
+export function formatEuro(value: number, intl = "it-IT"): string {
+  return new Intl.NumberFormat(intl, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 3,
@@ -95,12 +95,12 @@ export function filterRecentStations(
 }
 
 /** "27 settembre 2026": data dell'ultimo prezzo comunicato nei dati, o null se non c'e'. */
-export function formatLatestUpdate(stations: Station[]): string | null {
+export function formatLatestUpdate(stations: Station[], intl = "it-IT"): string | null {
   const latest = latestCommunicationTime(stations);
   if (!latest) {
     return null;
   }
-  return new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Rome" }).format(new Date(latest));
+  return new Intl.DateTimeFormat(intl, { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Rome" }).format(new Date(latest));
 }
 
 /** Sotto/sopra queste frazioni della mediana un prezzo e' considerato un errore di comunicazione (es. 1,000 o 0,123 €/l). */

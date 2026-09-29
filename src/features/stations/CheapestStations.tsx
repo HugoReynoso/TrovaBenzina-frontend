@@ -2,6 +2,8 @@
 
 import { Navigation } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { intlLocale, type Locale } from "@/lib/i18n";
+import { getMessages } from "@/lib/messages";
 import { formatEuro, getStationPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { Station } from "@/types/station";
@@ -16,13 +18,16 @@ interface CheapestStationsProps {
   onSelectStation?: (station: Station) => void;
   /** false quando il titolo e' gia' mostrato altrove (es. box a scomparsa su mobile): evita titoli e id duplicati. */
   showHeader?: boolean;
+  locale?: Locale;
 }
 
-export function CheapestStations({ stations, fuelType, serviceMode, cityName, title, onSelectStation, showHeader = true }: CheapestStationsProps) {
+export function CheapestStations({ stations, fuelType, serviceMode, cityName, title, onSelectStation, showHeader = true, locale = "it" }: CheapestStationsProps) {
+  const t = getMessages(locale);
+  const intl = intlLocale(locale);
   if (stations.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-ink/20 bg-white p-5 text-sm text-ink/70">
-        Nessun prezzo aggiornato negli ultimi 4 giorni con questi filtri.
+        {t.cheapest.empty}
       </div>
     );
   }
@@ -35,9 +40,9 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
       {showHeader ? (
         <div className="flex items-center justify-between gap-3">
           <h2 id="piu-economici" className="text-lg font-black leading-tight text-ink md:text-xl">
-            {title ?? `Più economici${cityName ? ` (${cityName})` : ""}`}
+            {title ?? t.cheapest.fallbackTitle(cityName)}
           </h2>
-          <span className="rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">Top {stations.length}</span>
+          <span className="rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">{t.cheapest.top(stations.length)}</span>
         </div>
       ) : null}
       <ol className={showHeader ? "mt-3 grid gap-2 md:mt-4 md:gap-3" : "grid gap-2"}>
@@ -61,7 +66,7 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
                   : undefined
               }
               tabIndex={onSelectStation ? 0 : undefined}
-              title={onSelectStation ? "Mostra sulla mappa" : undefined}
+              title={onSelectStation ? t.cheapest.showOnMap : undefined}
             >
               <span className="grid size-7 place-items-center rounded-md bg-white text-xs font-black text-ink shadow-sm md:size-8 md:text-sm">
                 {index + 1}
@@ -76,7 +81,7 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-sm font-black text-mint md:text-base">{price ? formatEuro(price.price) : "-"}</p>
+                <p className="text-sm font-black text-mint md:text-base">{price ? formatEuro(price.price, intl) : "-"}</p>
                 <a
                   className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-bold text-petrol hover:bg-petrol/8 md:px-2 md:text-xs"
                   href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
@@ -85,7 +90,7 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
                   onClick={(event) => event.stopPropagation()}
                 >
                   <Navigation size={13} aria-hidden="true" />
-                  Naviga
+                  {t.cheapest.directions}
                 </a>
               </div>
             </li>

@@ -1,26 +1,31 @@
 import { Gauge, TrendingDown, TrendingUp, Warehouse } from "lucide-react";
+import { intlLocale, type Locale } from "@/lib/i18n";
+import { getMessages } from "@/lib/messages";
 import { formatEuro } from "@/lib/price";
 import type { CityFuelStatistic } from "@/types/statistics";
 
 interface StatsCardsProps {
   statistic: CityFuelStatistic;
   compact?: boolean;
+  locale?: Locale;
 }
 
 const statClass = "rounded-md border border-ink/10 bg-white p-4 shadow-sm";
 
-export function StatsCards({ statistic, compact = false }: StatsCardsProps) {
+export function StatsCards({ statistic, compact = false, locale = "it" }: StatsCardsProps) {
+  const t = getMessages(locale);
+  const intl = intlLocale(locale);
   const items = [
-    { label: "Prezzo medio", value: formatEuro(statistic.averagePrice), icon: Gauge },
-    { label: "Minimo", value: formatEuro(statistic.minimumPrice), icon: TrendingDown },
-    { label: "Massimo", value: formatEuro(statistic.maximumPrice), icon: TrendingUp },
-    { label: "Distributori", value: String(statistic.stationCount), icon: Warehouse }
+    { label: t.stats.average, value: formatEuro(statistic.averagePrice, intl), icon: Gauge },
+    { label: t.stats.minimum, value: formatEuro(statistic.minimumPrice, intl), icon: TrendingDown },
+    { label: t.stats.maximum, value: formatEuro(statistic.maximumPrice, intl), icon: TrendingUp },
+    { label: t.stats.stations, value: String(statistic.stationCount), icon: Warehouse }
   ];
 
   return (
     <section aria-labelledby="statistiche" className="grid gap-3">
       <h2 id="statistiche" className="text-xl font-black text-ink">
-        Prezzi in sintesi
+        {t.stats.title}
       </h2>
       <div className={`grid grid-cols-2 gap-3 ${compact ? "" : "md:grid-cols-4"}`}>
         {items.map((item) => {

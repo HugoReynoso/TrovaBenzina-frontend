@@ -9,6 +9,8 @@ import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { filterReliableStations, formatLatestUpdate, getStationPrice, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
 import { useNow } from "@/lib/useNow";
+import { intlLocale, type Locale } from "@/lib/i18n";
+import { getMessages, type Messages } from "@/lib/messages";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import { FUEL_TYPES } from "@/types/fuel";
@@ -23,6 +25,7 @@ interface MapExperienceProps {
   initialProvince: Province;
   stations: Station[];
   statistic: CityFuelStatistic;
+  locale?: Locale;
 }
 
 interface UserPosition {
@@ -57,13 +60,8 @@ function findProvinceCenter(cities: City[], province: Province, fallbackCity: Ci
   );
 }
 
-const LOCATION_DENIED_MESSAGE =
-  "Hai negato l'accesso alla posizione. Abilitalo dalle impostazioni del browser oppure scegli una provincia.";
-const LOCATION_UNAVAILABLE_MESSAGE =
-  "Non riesco a trovare la tua posizione in questo momento. Riprova tra qualche secondo oppure scegli una provincia.";
-
-function formatSavings(value: number): string {
-  return new Intl.NumberFormat("it-IT", {
+function formatSavings(value: number, intl: string): string {
+  return new Intl.NumberFormat(intl, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
@@ -71,7 +69,9 @@ function formatSavings(value: number): string {
   }).format(value);
 }
 
-export function MapExperience({ cities, provinces, initialCity, initialProvince, stations, statistic }: MapExperienceProps) {
+export function MapExperience({ cities, provinces, initialCity, initialProvince, stations, statistic, locale = "it" }: MapExperienceProps) {
+  const t = getMessages(locale);
+  const intl = intlLocale(locale);
   const [fuelType, setFuelType] = useState<FuelTypeCode>("BENZINA");
   const [serviceMode, setServiceMode] = useState<ServiceMode>("self");
   const [provinceId, setProvinceId] = useState(initialProvince.id);
@@ -96,7 +96,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
     [cities, initialCity, selectedProvince]
   );
   const isUsingUserPosition = Boolean(userPosition) && !userSelectedProvinceRef.current;
-  const listTitle = isUsingUserPosition ? "Distributori vicino a te" : `Distributori in provincia di ${selectedProvince.name}`;
+  const listTitle = isUsingUserPosition ? t.map.listNear : t.map.listProvince(selectedProvince.name);
 
   const now = useNow();
   const [focusRequest, setFocusRequest] = useState<StationFocusRequest | null>(null);
@@ -143,12 +143,12 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
     if (status === "loading" || status === "ready") {
       setLocationError("");
     } else if (status === "denied") {
-      setLocationError(LOCATION_DENIED_MESSAGE);
+      setLocationError(t.location.denied);
     } else if (status === "unavailable") {
-      setLocationError(LOCATION_UNAVAILABLE_MESSAGE);
+      setLocationError(t.location.unavailable);
     }
   }
-  const latestUpdate = useMemo(() => formatLatestUpdate(visibleStations), [visibleStations]);
+  const latestUpdate = useMemo(() => formatLatestUpdate(visibleStations, intl), [intl, visibleStations]);
   const cheapestPrice = orderedStations.map((station) => getStationPrice(station, fuelType, serviceMode)?.price).find(Boolean);
   const savingOnTank = cheapestPrice ? Math.max(0, (currentStatistic.averagePrice - cheapestPrice) * 50) : 0;
 
@@ -239,12 +239,12 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
         setCurrentStatistic(nextStatistic);
 
         if (stationsResult.status === "rejected") {
-          setError(stationsResult.reason instanceof Error ? stationsResult.reason.message : "Impossibile caricare i distributori.");
+          setError(stationsResult.reason instanceof Error ? stationsResult.reason.message : t.home.loadStationsError);
         }
       } catch (loadError) {
         if (!abortController.signal.aborted) {
           setVisibleStations([]);
-          setError(loadError instanceof Error ? loadError.message : "Impossibile caricare i dati in questo momento.");
+          setError(loadError instanceof Error ? loadError.message : t.home.loadDataError);
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -276,6 +276,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           provinces={provinces}
           selectedProvinceId={selectedProvince.id}
           serviceMode={serviceMode}
+          t={t}
         />
         <DynamicStationMap
           city={selectedCity}
@@ -289,6 +290,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
           onLocationStatusChange={handleLocationStatusChange}
           focusRequest={focusRequest}
           locationControlClassName="top-[118px] sm:top-3"
+          locale={locale}
           className="map-experience__leaflet w-full min-w-0 overflow-hidden border-y border-ink/10 bg-white lg:h-full lg:min-h-0 lg:border-0"
         />
       </div>
@@ -301,16 +303,16 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
               <h1 id="map-results-title" className="text-lg font-black leading-tight text-ink lg:truncate lg:text-xl">
                 {listTitle}
               </h1>
-              {latestUpdate ? <p className="mt-0.5 text-xs font-bold text-ink/58">Prezzi aggiornati al {latestUpdate}</p> : null}
+              {latestUpdate ? <p className="mt-0.5 text-xs font-bold text-ink/58">{t.home.pricesUpdatedAt(latestUpdate)}</p> : null}
             </div>
             <div className="flex shrink-0 gap-2">
-              <span className="rounded-md bg-ink/[0.035] px-3 py-2 text-sm font-black text-ink">Distributori ({orderedStations.length})</span>
+              <span className="rounded-md bg-ink/[0.035] px-3 py-2 text-sm font-black text-ink">{t.map.stationsBadge(orderedStations.length)}</span>
             </div>
           </div>
         </div>
 
         <div className="bg-mint px-4 py-3 text-sm font-black uppercase tracking-[0.02em] text-white">
-          Risparmio: {formatSavings(savingOnTank)} su un pieno di 50L
+          {t.map.savings(formatSavings(savingOnTank, intl))}
         </div>
 
         {locationError ? <p className="m-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{locationError}</p> : null}
@@ -326,11 +328,12 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
                 fuelType={fuelType}
                 serviceMode={serviceMode}
                 onSelect={handleSelectStation}
+                t={t}
               />
             ))
           ) : (
             <li className="min-w-[82vw] rounded-md border border-dashed border-ink/20 bg-white p-5 text-sm font-bold text-ink/66 lg:m-4 lg:min-w-0">
-              Nessun distributore con prezzo aggiornato negli ultimi 4 giorni con questi filtri.
+              {t.map.emptyList}
             </li>
           )}
         </ol>
@@ -348,7 +351,8 @@ function MapFilters({
   onServiceModeChange,
   provinces,
   selectedProvinceId,
-  serviceMode
+  serviceMode,
+  t
 }: {
   fuelType: FuelTypeCode;
   isLoading: boolean;
@@ -359,6 +363,7 @@ function MapFilters({
   provinces: Province[];
   selectedProvinceId: number;
   serviceMode: ServiceMode;
+  t: Messages;
 }) {
   const sortedProvinces = useMemo(() => [...provinces].sort((left, right) => left.name.localeCompare(right.name, "it")), [provinces]);
 
@@ -371,11 +376,11 @@ function MapFilters({
             className="h-11 w-full min-w-0 appearance-none rounded-md border border-ink/15 bg-white/96 px-9 pr-8 text-sm font-black text-ink shadow-sm outline-none sm:w-auto"
             value={fuelType}
             onChange={(event) => onFuelChange(event.target.value as FuelTypeCode)}
-            aria-label="Scegli carburante"
+            aria-label={t.map.chooseFuel}
           >
             {FUEL_TYPES.map((fuel) => (
               <option key={fuel.code} value={fuel.code}>
-                {fuel.name.toUpperCase()}
+                {t.fuelName[fuel.code].toUpperCase()}
               </option>
             ))}
           </select>
@@ -384,7 +389,7 @@ function MapFilters({
           className="h-11 w-full min-w-0 truncate rounded-md border border-ink/15 bg-white/96 px-3 text-sm font-black text-ink shadow-sm outline-none sm:w-auto"
           value={selectedProvinceId}
           onChange={(event) => onProvinceChange(Number(event.target.value))}
-          aria-label="Scegli provincia"
+          aria-label={t.map.chooseProvince}
         >
           {sortedProvinces.map((province) => (
             <option key={province.id} value={province.id}>
@@ -396,22 +401,22 @@ function MapFilters({
           className="h-11 w-full min-w-0 rounded-md border border-ink/15 bg-white/96 px-3 text-sm font-black text-ink shadow-sm outline-none sm:w-auto"
           value={serviceMode}
           onChange={(event) => onServiceModeChange(event.target.value as ServiceMode)}
-          aria-label="Scegli modalità prezzo"
+          aria-label={t.map.chooseMode}
         >
-          <option value="self">Self</option>
-          <option value="served">Servito</option>
-          <option value="all">Miglior prezzo</option>
+          <option value="self">{t.serviceModeShort.self}</option>
+          <option value="served">{t.serviceModeShort.served}</option>
+          <option value="all">{t.serviceModeShort.all}</option>
         </select>
         <button
           type="button"
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-black text-white shadow-sm transition hover:bg-petrol"
-          aria-label="Trova distributori"
-          title="Trova distributori"
+          aria-label={t.map.findStations}
+          title={t.map.findStations}
           onClick={onRefresh}
           disabled={isLoading}
         >
           {isLoading ? <RefreshCw className="animate-spin" size={17} aria-hidden="true" /> : <Search size={17} aria-hidden="true" />}
-          Trova
+          {t.filters.find}
         </button>
       </div>
     </div>
@@ -423,13 +428,15 @@ function MapStationCard({
   index,
   onSelect,
   serviceMode,
-  station
+  station,
+  t
 }: {
   fuelType: FuelTypeCode;
   index: number;
   onSelect: (station: Station) => void;
   serviceMode: ServiceMode;
   station: Station;
+  t: Messages;
 }) {
   const price = getStationPrice(station, fuelType, serviceMode);
 
@@ -444,7 +451,7 @@ function MapStationCard({
         }
       }}
       tabIndex={0}
-      title="Mostra sulla mappa"
+      title={t.cheapest.showOnMap}
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
         <div className="min-w-0">
@@ -457,7 +464,7 @@ function MapStationCard({
         <BrandLogo brand={station.brand} compact />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="rounded-md bg-petrol/10 px-2 py-1 text-xs font-bold text-petrol">Stradale</span>
+        <span className="rounded-md bg-petrol/10 px-2 py-1 text-xs font-bold text-petrol">{t.map.road}</span>
         {station.distanceKm ? <span className="rounded-md bg-ink/[0.045] px-2 py-1 text-xs font-bold text-ink/62">{station.distanceKm.toFixed(1)} km</span> : null}
       </div>
       <div className="mt-4 flex items-center justify-between gap-3">
@@ -466,8 +473,8 @@ function MapStationCard({
           href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
           target="_blank"
           rel="noreferrer"
-          aria-label={`Avvia il percorso per ${station.name} su Google Maps`}
-          title="Apri il percorso su Google Maps"
+          aria-label={t.map.routeAria(station.name)}
+          title={t.map.routeTitle}
           onClick={(event) => event.stopPropagation()}
         >
           <Navigation size={20} aria-hidden="true" />

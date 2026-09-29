@@ -6,47 +6,64 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { withBasePath } from "@/lib/site";
+import { LOCALE_ROUTES, localeFromPathname, type Locale } from "@/lib/i18n";
+import { getMessages } from "@/lib/messages";
 import { LanguageSelector } from "./LanguageSelector";
 
-const navItems = [
-  { href: "/", label: "Home" },
-  { href: "/mappa", label: "Mappa" },
-  { href: "/accise-benzina", label: "Accise" },
-  { href: "/notizie", label: "Notizie" },
-  { href: "/segnala-prezzo", label: "Segnala" }
-];
+function navItemsFor(locale: Locale): Array<{ href: string; label: string; exact?: boolean }> {
+  const t = getMessages(locale);
+  const routes = LOCALE_ROUTES[locale];
+  if (locale === "it") {
+    return [
+      { href: "/", label: t.nav.home, exact: true },
+      { href: "/mappa", label: t.nav.map },
+      { href: "/accise-benzina", label: t.nav.excise },
+      { href: "/notizie", label: t.nav.news },
+      { href: "/segnala-prezzo", label: t.nav.report }
+    ];
+  }
+  // Le pagine Accise, Notizie e Segnala esistono solo in italiano.
+  return [
+    { href: routes.home, label: t.nav.home, exact: true },
+    { href: routes.map, label: t.nav.map },
+    { href: routes.fuelIndex, label: t.nav.pricesByCity }
+  ];
+}
 
 function normalizePath(path: string): string {
   const trimmed = path.replace(/\/+$/, "");
   return trimmed === "" ? "/" : trimmed;
 }
 
-function isActivePath(pathname: string, href: string): boolean {
+function isActivePath(pathname: string, href: string, exact = false): boolean {
   const current = normalizePath(pathname);
   const target = normalizePath(href);
-  return target === "/" ? current === "/" : current === target || current.startsWith(`${target}/`);
+  return exact ? current === target : current === target || current.startsWith(`${target}/`);
 }
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname() ?? "/";
+  const locale = localeFromPathname(pathname);
+  const t = getMessages(locale);
+  const navItems = navItemsFor(locale);
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/92 backdrop-blur" suppressHydrationWarning>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6" suppressHydrationWarning>
-        <Link href="/" className="flex items-center gap-2 tracking-normal text-ink" aria-label="TrovaBenzina home" onClick={() => setMenuOpen(false)}>
+        <Link href={LOCALE_ROUTES[locale].home} className="flex items-center gap-2 tracking-normal text-ink" aria-label="TrovaBenzina home" onClick={() => setMenuOpen(false)}>
           <Image src={withBasePath("/brand/trovabenzina-mark.svg")} alt="" width={40} height={40} priority />
           <span className="grid leading-none">
             <span className="text-base font-black md:text-lg">
               <span>Trova</span>
               <span className="text-[#d49318]">Benzina</span>
             </span>
-            <span className="mt-0.5 text-[10px] font-bold leading-tight text-petrol md:text-xs">Trova il pieno che fa meno male.</span>
+            <span className="mt-0.5 text-[10px] font-bold leading-tight text-petrol md:text-xs">{t.tagline}</span>
           </span>
         </Link>
-        <nav aria-label="Navigazione principale" className="hidden items-center gap-1 md:flex">
+        <nav aria-label={t.mainNavigation} className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => {
-            const isActive = isActivePath(pathname, item.href);
+            const isActive = isActivePath(pathname, item.href, item.exact);
             return (
               <Link
                 key={item.href}
@@ -64,10 +81,10 @@ export function Header() {
           })}
         </nav>
         <div className="flex items-center gap-2" suppressHydrationWarning>
-          <LanguageSelector />
+          <LanguageSelector locale={locale} pathname={pathname} />
           <button
             className="grid size-10 place-items-center rounded-md border border-ink/10 bg-white md:hidden"
-            aria-label={menuOpen ? "Chiudi menu" : "Apri menu"}
+            aria-label={menuOpen ? t.closeMenu : t.openMenu}
             aria-expanded={menuOpen}
             type="button"
             onClick={() => setMenuOpen((isOpen) => !isOpen)}
@@ -77,10 +94,10 @@ export function Header() {
         </div>
       </div>
       {menuOpen ? (
-        <nav className="border-t border-ink/10 bg-white px-4 py-3 shadow-sm md:hidden" aria-label="Navigazione mobile">
+        <nav className="border-t border-ink/10 bg-white px-4 py-3 shadow-sm md:hidden" aria-label={t.mobileNavigation}>
           <div className="mx-auto grid max-w-7xl gap-2">
             {navItems.map((item) => {
-              const isActive = isActivePath(pathname, item.href);
+              const isActive = isActivePath(pathname, item.href, item.exact);
               return (
                 <Link
                   key={item.href}

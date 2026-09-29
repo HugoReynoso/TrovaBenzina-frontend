@@ -2,19 +2,23 @@
 
 import { MapPin } from "lucide-react";
 import type { Province } from "@/types/location";
+import type { Locale } from "@/lib/i18n";
+import { getMessages } from "@/lib/messages";
 
 interface ProvinceSelectorProps {
   provinces: Province[];
   value: number;
   onChange: (provinceId: number) => void;
+  locale?: Locale;
 }
 
-export function ProvinceSelector({ provinces, value, onChange }: ProvinceSelectorProps) {
+export function ProvinceSelector({ provinces, value, onChange, locale = "it" }: ProvinceSelectorProps) {
+  const t = getMessages(locale);
   const sortedProvinces = [...provinces].sort((left, right) => left.name.localeCompare(right.name, "it"));
 
   return (
     <label className="grid gap-1.5">
-      <span className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">Provincia</span>
+      <span className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">{t.filters.province}</span>
       <span className="relative block">
         <MapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-petrol" size={18} aria-hidden="true" />
         <select

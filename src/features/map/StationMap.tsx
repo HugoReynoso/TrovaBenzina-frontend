@@ -9,6 +9,8 @@ import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEve
 import { BrandLogo } from "@/components/BrandLogo";
 import { escapeHtml, getFuelBrand } from "@/lib/brand";
 import { locateUser } from "@/lib/geolocation";
+import { intlLocale, type Locale } from "@/lib/i18n";
+import { getMessages } from "@/lib/messages";
 import { formatEuro, getPriceTone, getStationPrice } from "@/lib/price";
 import { withBasePath } from "@/lib/site";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -42,6 +44,7 @@ interface StationMapProps {
   locationControlClassName?: string;
   /** Quando cambia, la mappa vola sul distributore e ne apre la scheda. */
   focusRequest?: StationFocusRequest | null;
+  locale?: Locale;
 }
 
 function markerIcon(brand: string, price: number, averagePrice: number) {
@@ -124,9 +127,11 @@ function LocationControl({
   onUserPositionChange,
   userPosition,
   locationLoading = false,
-  positionClassName = "top-[108px] sm:top-3"
+  positionClassName = "top-[108px] sm:top-3",
+  locale = "it"
 }: {
   positionClassName?: string;
+  locale?: Locale;
   locateRequestId?: number;
   onLocationStatusChange?: (status: LocationStatus) => void;
   onUserPositionChange?: (position: { latitude: number; longitude: number }) => void;
@@ -134,6 +139,7 @@ function LocationControl({
   locationLoading?: boolean;
 }) {
   const map = useMap();
+  const t = getMessages(locale);
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<LocationStatus>("idle");
 
@@ -177,7 +183,7 @@ function LocationControl({
   useEffect(() => () => cancelLocateRef.current?.(), []);
 
   const isBusy = status === "loading" || locationLoading;
-  const label = isBusy ? "Cerco..." : status === "ready" ? "Posizione" : "Posizionami";
+  const label = isBusy ? t.location.locating : status === "ready" ? t.location.located : t.location.locateMe;
   const displayedPosition = userPosition ? { lat: userPosition.latitude, lng: userPosition.longitude } : position;
 
   return (
@@ -185,8 +191,8 @@ function LocationControl({
       <button
         type="button"
         className={`absolute right-3 ${positionClassName} z-[500] inline-flex h-10 items-center gap-1.5 rounded-md border border-ink/10 bg-white/95 px-2.5 text-[11px] font-black text-ink shadow-soft backdrop-blur transition hover:bg-white sm:gap-2 sm:px-3 sm:text-xs`}
-        aria-label="Trova la mia posizione sulla mappa"
-        title="Trova la mia posizione"
+        aria-label={t.location.locateAria}
+        title={t.location.locateTitle}
         aria-busy={isBusy}
         disabled={isBusy}
         onClick={() => requestPosition(true)}
@@ -200,7 +206,7 @@ function LocationControl({
           pathOptions={{ color: "#991B1B", fillColor: "#EF4444", fillOpacity: 0.62, weight: 4 }}
           radius={16}
         >
-          <Popup>Sei qui</Popup>
+          <Popup>{t.location.youAreHere}</Popup>
         </CircleMarker>
       ) : null}
     </>
@@ -266,8 +272,11 @@ export function StationMap({
   className,
   showLocationControl = true,
   locationControlClassName,
-  focusRequest
+  focusRequest,
+  locale = "it"
 }: StationMapProps) {
+  const t = getMessages(locale);
+  const intl = intlLocale(locale);
   const [zoom, setZoom] = useState(12);
   const markerRefs = useRef(new Map<number, L.Marker>());
   const precision = clusterPrecision(zoom);
@@ -292,6 +301,7 @@ export function StationMap({
             userPosition={userPosition}
             locationLoading={locationLoading}
             positionClassName={locationControlClassName}
+            locale={locale}
           />
         ) : null}
         {clusters.map((cluster) => {
@@ -333,19 +343,20 @@ export function StationMap({
                   </div>
                   <h3 className="mt-1 text-base font-black text-ink">{station.name}</h3>
                   <p className="mt-1 text-sm text-ink/70">{station.address}</p>
-                  {station.distanceKm ? <p className="mt-1 text-xs font-black text-petrol">{station.distanceKm.toFixed(1)} km da te</p> : null}
+                  {station.distanceKm ? <p className="mt-1 text-xs font-black text-petrol">{t.location.kmFromYou(station.distanceKm.toFixed(1))}</p> : null}
                   <dl className="mt-3 grid gap-2 text-sm">
                     {station.prices.map((stationPrice) => (
                       <div key={`${stationPrice.fuelTypeCode}-${stationPrice.selfService}`} className="flex justify-between gap-3">
                         <dt>
-                          {stationPrice.fuelTypeName} {stationPrice.selfService ? "self" : "servito"}
+                          {t.fuelName[stationPrice.fuelTypeCode] ?? stationPrice.fuelTypeName}{" "}
+                          {stationPrice.selfService ? t.priceMode.self : t.priceMode.served}
                         </dt>
-                        <dd className="font-black">{formatEuro(stationPrice.price)}</dd>
+                        <dd className="font-black">{formatEuro(stationPrice.price, intl)}</dd>
                       </div>
                     ))}
                   </dl>
                   <p className="mt-2 text-xs text-ink/58">
-                    Aggiornato: {new Intl.DateTimeFormat("it-IT").format(new Date(price.communicatedAt))}
+                    {t.map.updatedOn(new Intl.DateTimeFormat(intl).format(new Date(price.communicatedAt)))}
                   </p>
                   <div className="mt-3 grid grid-cols-[0.9fr_1.1fr] gap-2">
                     <Link
@@ -353,7 +364,7 @@ export function StationMap({
                       href={reportHref}
                     >
                       <PencilLine size={14} aria-hidden="true" />
-                      Aggiorna
+                      {t.map.updatePrice}
                     </Link>
                     <a
                       className="inline-flex items-center justify-center gap-1.5 rounded-md bg-amber px-2 py-2 text-xs font-black text-ink shadow-sm transition hover:bg-[#e0a42f]"
@@ -362,7 +373,7 @@ export function StationMap({
                       rel="noreferrer"
                     >
                       <Navigation size={14} aria-hidden="true" />
-                      Percorso
+                      {t.map.route}
                     </a>
                   </div>
                 </article>

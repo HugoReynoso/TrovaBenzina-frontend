@@ -5,12 +5,13 @@ import { getCities } from "@/lib/api/cities";
 import { getProvinces } from "@/lib/api/provinces";
 import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
+import { mapAlternates } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Mappa distributori carburante",
   description:
     "Consulta la mappa distributori TrovaBenzina con filtri per provincia, carburante e modalità prezzo. Lista completa ordinata dal prezzo più economico.",
-  alternates: { canonical: "/mappa" },
+  alternates: { canonical: "/mappa", languages: mapAlternates() },
   openGraph: {
     title: "Mappa distributori carburante | TrovaBenzina",
     description: "Mappa carburanti con filtri e lista completa dei distributori ordinati per prezzo.",

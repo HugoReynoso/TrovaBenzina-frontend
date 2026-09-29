@@ -3,16 +3,20 @@
 import { Fuel } from "lucide-react";
 import type { FuelTypeCode } from "@/types/fuel";
 import { FUEL_TYPES } from "@/types/fuel";
+import type { Locale } from "@/lib/i18n";
+import { getMessages } from "@/lib/messages";
 
 interface FuelSelectorProps {
   value: FuelTypeCode;
   onChange: (value: FuelTypeCode) => void;
+  locale?: Locale;
 }
 
-export function FuelSelector({ value, onChange }: FuelSelectorProps) {
+export function FuelSelector({ value, onChange, locale = "it" }: FuelSelectorProps) {
+  const t = getMessages(locale);
   return (
     <label className="grid gap-1.5">
-      <span className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">Carburante</span>
+      <span className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">{t.filters.fuel}</span>
       <span className="relative block">
         <Fuel className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-petrol" size={18} aria-hidden="true" />
         <select
@@ -22,7 +26,7 @@ export function FuelSelector({ value, onChange }: FuelSelectorProps) {
         >
           {FUEL_TYPES.map((fuel) => (
             <option key={fuel.code} value={fuel.code}>
-              {fuel.name}
+              {t.fuelName[fuel.code]}
             </option>
           ))}
         </select>

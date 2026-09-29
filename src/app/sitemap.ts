@@ -1,6 +1,17 @@
 import type { MetadataRoute } from "next";
 import { mockNews } from "@/mocks/news";
 import { getCities } from "@/lib/api/cities";
+import {
+  cityFuelAlternates,
+  cityFuelPathFor,
+  fuelIndexAlternates,
+  homeAlternates,
+  isTranslatedCity,
+  LOCALE_ROUTES,
+  LOCALIZED_FUELS,
+  mapAlternates,
+  type Locale
+} from "@/lib/i18n";
 import { siteUrl } from "@/lib/seo";
 import { getSeoCities } from "@/lib/seo-cities";
 
@@ -13,21 +24,55 @@ function pageUrl(path: string): string {
   return `${siteUrl}${withSlash}`;
 }
 
+/** Converte gli hreflang (percorsi) in indirizzi assoluti per la sitemap. */
+function languageUrls(alternates: Record<string, string> | undefined) {
+  if (!alternates) {
+    return undefined;
+  }
+  return { languages: Object.fromEntries(Object.entries(alternates).map(([language, path]) => [language, pageUrl(path)])) };
+}
+
+const LOCALES: Locale[] = ["it", "en", "es"];
+const FUEL_PRIORITY = { BENZINA: 0.8, DIESEL: 0.8, GPL: 0.7 } as const;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const buildDate = new Date();
-  const cities = await getCities();
+  const seoCities = getSeoCities(await getCities());
 
-  const cityRoutes: MetadataRoute.Sitemap = getSeoCities(cities).flatMap((city) => [
-    { url: pageUrl(`/prezzo-benzina/${city.slug}`), lastModified: buildDate, changeFrequency: "daily", priority: 0.8 },
-    { url: pageUrl(`/prezzo-diesel/${city.slug}`), lastModified: buildDate, changeFrequency: "daily", priority: 0.8 },
-    { url: pageUrl(`/prezzo-gpl/${city.slug}`), lastModified: buildDate, changeFrequency: "daily", priority: 0.7 },
-    { url: pageUrl(`/storico-prezzo-benzina/${city.slug}`), lastModified: buildDate, changeFrequency: "weekly", priority: 0.5 }
-  ]);
+  // Pagine presenti in tutte le lingue: Home, Mappa, indice prezzi per citta.
+  const sharedRoutes: MetadataRoute.Sitemap = LOCALES.flatMap((locale) => {
+    const routes = LOCALE_ROUTES[locale];
+    const isItalian = locale === "it";
+    return [
+      { url: pageUrl(routes.home), lastModified: buildDate, changeFrequency: "daily" as const, priority: isItalian ? 1 : 0.8, alternates: languageUrls(homeAlternates()) },
+      { url: pageUrl(routes.map), lastModified: buildDate, changeFrequency: "daily" as const, priority: isItalian ? 0.9 : 0.7, alternates: languageUrls(mapAlternates()) },
+      { url: pageUrl(routes.fuelIndex), lastModified: buildDate, changeFrequency: "weekly" as const, priority: isItalian ? 0.8 : 0.6, alternates: languageUrls(fuelIndexAlternates()) }
+    ];
+  });
 
-  const staticRoutes: MetadataRoute.Sitemap = [
-    { url: pageUrl("/"), lastModified: buildDate, changeFrequency: "daily", priority: 1 },
-    { url: pageUrl("/mappa"), lastModified: buildDate, changeFrequency: "daily", priority: 0.9 },
-    { url: pageUrl("/prezzi-carburanti"), lastModified: buildDate, changeFrequency: "weekly", priority: 0.8 },
+  // Pagine citta: in italiano tutti i capoluoghi, in inglese e spagnolo i capoluoghi di regione.
+  const cityRoutes: MetadataRoute.Sitemap = LOCALES.flatMap((locale) =>
+    seoCities
+      .filter((city) => locale === "it" || isTranslatedCity(city.slug))
+      .flatMap((city) =>
+        LOCALIZED_FUELS.map((fuel) => ({
+          url: pageUrl(cityFuelPathFor(locale, fuel, city.slug)),
+          lastModified: buildDate,
+          changeFrequency: "daily" as const,
+          priority: locale === "it" ? FUEL_PRIORITY[fuel] : 0.6,
+          alternates: languageUrls(cityFuelAlternates(fuel, city.slug))
+        }))
+      )
+  );
+
+  const historyRoutes: MetadataRoute.Sitemap = seoCities.map((city) => ({
+    url: pageUrl(`/storico-prezzo-benzina/${city.slug}`),
+    lastModified: buildDate,
+    changeFrequency: "weekly",
+    priority: 0.5
+  }));
+
+  const italianOnlyRoutes: MetadataRoute.Sitemap = [
     { url: pageUrl("/accise-benzina"), changeFrequency: "monthly", priority: 0.6 },
     { url: pageUrl("/notizie"), changeFrequency: "weekly", priority: 0.6 },
     { url: pageUrl("/segnala-prezzo"), changeFrequency: "monthly", priority: 0.4 },
@@ -42,5 +87,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5
   }));
 
-  return [...staticRoutes, ...cityRoutes, ...newsRoutes];
+  return [...sharedRoutes, ...cityRoutes, ...historyRoutes, ...italianOnlyRoutes, ...newsRoutes];
 }

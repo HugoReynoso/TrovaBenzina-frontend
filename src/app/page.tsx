@@ -7,12 +7,13 @@ import { getCities } from "@/lib/api/cities";
 import { getProvinces } from "@/lib/api/provinces";
 import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
+import { homeAlternates } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: { absolute: "TrovaBenzina | Prezzo benzina oggi e distributori più economici" },
   description:
     "Trova Benzina: confronta il prezzo di benzina, diesel e GPL oggi, trova il distributore più economico vicino a te sulla mappa e controlla la data dell'ultimo prezzo comunicato al MIMIT.",
-  alternates: { canonical: "/" },
+  alternates: { canonical: "/", languages: homeAlternates() },
   openGraph: {
     title: "TrovaBenzina | Prezzo benzina oggi e distributori più economici",
     description: "Trova Benzina: mappa dei distributori con prezzi di benzina, diesel e GPL, filtri per provincia e modalità self o servito.",
