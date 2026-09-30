@@ -75,6 +75,11 @@ export interface Messages {
     touchHint: string;
     wheelHint: string;
     showMore: (count: number) => string;
+    brand: string;
+    allBrands: string;
+    sortBy: string;
+    sortPrice: string;
+    sortDistance: string;
     routeAria: (name: string) => string;
     routeTitle: string;
     updatedOn: (date: string) => string;
@@ -156,6 +161,11 @@ const it: Messages = {
     touchHint: "Tocca la mappa per spostarla",
     wheelHint: "Clicca sulla mappa per usare lo zoom con la rotella",
     showMore: (count) => `Mostra altri ${count}`,
+    brand: "Marchio",
+    allBrands: "Tutti i marchi",
+    sortBy: "Ordina per",
+    sortPrice: "Prezzo",
+    sortDistance: "Distanza",
     routeAria: (name) => `Avvia il percorso per ${name} su Google Maps`,
     routeTitle: "Apri il percorso su Google Maps",
     updatedOn: (date) => `Aggiornato: ${date}`,
@@ -245,6 +255,11 @@ const en: Messages = {
     touchHint: "Tap the map to move it",
     wheelHint: "Click the map to zoom with the scroll wheel",
     showMore: (count) => `Show ${count} more`,
+    brand: "Brand",
+    allBrands: "All brands",
+    sortBy: "Sort by",
+    sortPrice: "Price",
+    sortDistance: "Distance",
     routeAria: (name) => `Get directions to ${name} on Google Maps`,
     routeTitle: "Open directions in Google Maps",
     updatedOn: (date) => `Updated: ${date}`,
@@ -334,6 +349,11 @@ const es: Messages = {
     touchHint: "Toca el mapa para moverlo",
     wheelHint: "Haz clic en el mapa para hacer zoom con la rueda",
     showMore: (count) => `Mostrar ${count} más`,
+    brand: "Marca",
+    allBrands: "Todas las marcas",
+    sortBy: "Ordenar por",
+    sortPrice: "Precio",
+    sortDistance: "Distancia",
     routeAria: (name) => `Cómo llegar a ${name} con Google Maps`,
     routeTitle: "Abrir la ruta en Google Maps",
     updatedOn: (date) => `Actualizado: ${date}`,

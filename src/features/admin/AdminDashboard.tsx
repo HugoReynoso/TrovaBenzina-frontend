@@ -142,7 +142,7 @@ export function AdminDashboard({ initialReports, logs, token, loading, onReports
                   {report.cityName} · {report.fuelTypeCode} · {report.selfService ? "Self" : "Servito"} · {formatEuro(report.price)}
                 </p>
                 {report.note ? <p className="mt-2 text-sm text-ink/70">{report.note}</p> : null}
-                <p className="mt-2 text-xs text-ink/52">
+                <p className="mt-2 text-xs text-ink/60">
                   Inviata il {new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(new Date(report.submittedAt))}
                 </p>
               </div>
@@ -182,10 +182,10 @@ export function AdminDashboard({ initialReports, logs, token, loading, onReports
             <article key={log.id} className="rounded-md bg-ink/[0.035] p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`rounded-md px-2 py-1 text-xs font-black ${levelClass[log.level]}`}>{log.level.toUpperCase()}</span>
-                <span className="text-xs font-black uppercase tracking-[0.08em] text-ink/54">{log.area}</span>
+                <span className="text-xs font-black uppercase tracking-[0.08em] text-ink/60">{log.area}</span>
               </div>
               <p className="mt-2 text-sm text-ink/74">{log.message}</p>
-              <p className="mt-2 text-xs text-ink/48">
+              <p className="mt-2 text-xs text-ink/60">
                 {new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short" }).format(new Date(log.createdAt))}
               </p>
             </article>

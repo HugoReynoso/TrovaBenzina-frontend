@@ -5,7 +5,7 @@ import L from "leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Hand, LoaderCircle, LocateFixed, MousePointerClick, Navigation, PencilLine } from "lucide-react";
 import Link from "next/link";
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents, ZoomControl } from "react-leaflet";
 import { BrandLogo } from "@/components/BrandLogo";
 import { escapeHtml, getFuelBrand } from "@/lib/brand";
 import { locateUser } from "@/lib/geolocation";
@@ -506,11 +506,13 @@ export function StationMap({
 
   return (
     <div className={className ?? "h-full min-h-[360px] overflow-hidden rounded-md border border-ink/10 shadow-soft"}>
-      <MapContainer center={[city.latitude, city.longitude]} zoom={12} scrollWheelZoom className="z-0 h-full">
+      <MapContainer center={[city.latitude, city.longitude]} zoom={12} scrollWheelZoom zoomControl={false} className="z-0 h-full">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        {/* In basso a destra, sopra "Posizionami": in alto a sinistra finiva sotto i filtri della pagina Mappa. */}
+        <ZoomControl position="bottomright" />
         <ViewportTracker onChange={setViewport} />
         <MapSizeObserver />
         <InteractionGuard guardWheel={guardWheel} locale={locale} />

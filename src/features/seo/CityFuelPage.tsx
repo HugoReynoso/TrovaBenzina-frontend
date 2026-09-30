@@ -18,6 +18,7 @@ import { filterReliableStations, latestCommunicationTime } from "@/lib/price";
 import { buildCityFuelMetadata, fuelSeo } from "@/lib/seo";
 import { getSeoCities } from "@/lib/seo-cities";
 import { buildCityFuelStatistic } from "@/lib/statistics";
+import { provinceCenterCities, toClientStations } from "@/lib/client-data";
 
 /**
  * Pagine "prezzo [carburante] [citta]" condivise tra italiano, inglese e spagnolo.
@@ -64,11 +65,11 @@ export async function CityFuelPage({ locale, fuelType, citySlug }: { locale: Loc
           locale={locale}
         />
         <HomeExperience
-          cities={cities}
+          cities={provinceCenterCities(cities, provinces)}
           provinces={provinces}
           initialCity={city}
           initialProvince={province}
-          stations={stations}
+          stations={toClientStations(stations)}
           statistic={statistic}
           showTitle={false}
           locale={locale}

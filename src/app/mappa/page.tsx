@@ -6,6 +6,7 @@ import { getProvinces } from "@/lib/api/provinces";
 import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { mapAlternates } from "@/lib/i18n";
+import { provinceCenterCities, toClientStations } from "@/lib/client-data";
 
 export const metadata: Metadata = {
   title: "Mappa distributori carburante",
@@ -30,7 +31,7 @@ export default async function MapPage() {
   return (
     <>
       <Header />
-      <MapExperience cities={cities} provinces={provinces} initialCity={city} initialProvince={province} stations={stations} statistic={statistic} />
+      <MapExperience cities={provinceCenterCities(cities, provinces)} provinces={provinces} initialCity={city} initialProvince={province} stations={toClientStations(stations)} statistic={statistic} />
     </>
   );
 }

@@ -2,7 +2,15 @@
 
 import dynamic from "next/dynamic";
 
-export const DynamicStationMap = dynamic(() => import("./StationMap").then((module) => module.StationMap), {
+const loadStationMap = () => import("./StationMap");
+
+// Scarica il codice della mappa (Leaflet) subito, in parallelo al resto della pagina, invece di
+// aspettare che la pagina sia interattiva: su mobile la mappa compare prima.
+if (typeof window !== "undefined") {
+  void loadStationMap();
+}
+
+export const DynamicStationMap = dynamic(() => loadStationMap().then((module) => module.StationMap), {
   ssr: false,
   loading: () => (
     // Riempie il contenitore della mappa, che ne decide l'altezza: niente salti quando la mappa e' pronta.

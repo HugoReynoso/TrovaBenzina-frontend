@@ -7,6 +7,7 @@ import { getStations } from "@/lib/api/stations";
 import { LOCALE_ROUTES, mapAlternates, openGraphLocale, type Locale } from "@/lib/i18n";
 import { defaultOgImage, siteName } from "@/lib/seo";
 import { buildCityFuelStatistic } from "@/lib/statistics";
+import { provinceCenterCities, toClientStations } from "@/lib/client-data";
 
 type ForeignLocale = Exclude<Locale, "it">;
 
@@ -53,11 +54,11 @@ export async function ForeignMapPage({ locale }: { locale: ForeignLocale }) {
     <>
       <Header />
       <MapExperience
-        cities={cities}
+        cities={provinceCenterCities(cities, provinces)}
         provinces={provinces}
         initialCity={city}
         initialProvince={province}
-        stations={stations}
+        stations={toClientStations(stations)}
         statistic={statistic}
         locale={locale}
       />

@@ -20,12 +20,12 @@ const COPY: Record<Locale, { home: string; title: string; metaTitle: string; des
   it: {
     home: "Home",
     title: "Prezzi carburanti per città",
-    metaTitle: "Prezzi carburanti per città: benzina, diesel e GPL in tutti i capoluoghi",
+    metaTitle: "Prezzi carburanti per città: benzina, diesel, GPL e metano in tutti i capoluoghi",
     description:
-      "Elenco dei capoluoghi di provincia italiani divisi per regione: confronta il prezzo di benzina, diesel e GPL oggi e trova i distributori più economici della tua città.",
+      "Elenco dei capoluoghi di provincia italiani divisi per regione: confronta il prezzo di benzina, diesel, GPL e metano oggi e trova i distributori più economici della tua città.",
     h1: "Prezzi carburanti per città",
     intro:
-      "Scegli il tuo capoluogo per vedere il prezzo di benzina, diesel e GPL oggi, la mappa dei distributori e la classifica dei più economici della provincia. I prezzi provengono dalle comunicazioni ufficiali dei gestori al MIMIT.",
+      "Scegli il tuo capoluogo per vedere il prezzo di benzina, diesel, GPL e metano oggi, la mappa dei distributori e la classifica dei più economici della provincia. I prezzi provengono dalle comunicazioni ufficiali dei gestori al MIMIT.",
     cityLink: (city) => `Prezzo benzina ${city}`
   },
   en: {
@@ -118,6 +118,10 @@ export async function FuelPricesIndexPage({ locale }: { locale: Locale }) {
                       {" · "}
                       <Link className="hover:text-petrol hover:underline" href={cityFuelPathFor(locale, "GPL", city.slug)}>
                         {t.fuelName.GPL}
+                      </Link>
+                      {" · "}
+                      <Link className="hover:text-petrol hover:underline" href={cityFuelPathFor(locale, "METANO", city.slug)}>
+                        {locale === "it" ? "metano" : t.fuelName.METANO}
                       </Link>
                     </span>
                   </li>

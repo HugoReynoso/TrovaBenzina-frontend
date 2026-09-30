@@ -11,8 +11,8 @@ import type { LocationStatus, StationFocusRequest } from "@/features/map/Station
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { filterReliableStations, formatLatestUpdate, formatPrice, getStationPrice, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
-import { useNow } from "@/lib/useNow";
 import { intlLocale, type Locale } from "@/lib/i18n";
+import { useUrlFilters } from "@/lib/useUrlFilters";
 import { getMessages, type Messages } from "@/lib/messages";
 import { buildCityFuelStatistic, buildStatisticFromStations, typicalPrice } from "@/lib/statistics";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
@@ -89,6 +89,8 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   const [locationError, setLocationError] = useState("");
   const [listLimit, setListLimit] = useState(LIST_PAGE_SIZE);
   const [activeStationId, setActiveStationId] = useState<number | null>(null);
+  const [brandFilter, setBrandFilter] = useState("");
+  const [sortMode, setSortMode] = useState<"price" | "distance">("price");
   const userSelectedProvinceRef = useRef(false);
   const stationListRef = useRef<HTMLOListElement>(null);
   const dataCacheRef = useRef(new Map<string, LoadedMapData>());
@@ -105,19 +107,41 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
   const isUsingUserPosition = Boolean(userPosition) && !userSelectedProvinceRef.current;
   const listTitle = isUsingUserPosition ? t.map.listNear : t.map.listProvince(selectedProvince.name);
 
-  const now = useNow();
   const [focusRequest, setFocusRequest] = useState<StationFocusRequest | null>(null);
   const mapCanvasRef = useRef<HTMLDivElement>(null);
 
-  // Mappa, lista, conteggio e risparmio usano gli stessi distributori: prezzi comunicati negli
-  // ultimi 4 giorni e non anomali. Prima dell'idratazione il riferimento e' la comunicazione piu'
-  // recente nei dati (stesso risultato su server e browser).
+  // Mappa, classifica, statistiche e conteggi usano gli stessi distributori: prezzi non anomali e
+  // comunicati nei 4 giorni prima dell'ultimo aggiornamento disponibile (non di oggi): se MIMIT
+  // pubblica in ritardo il sito non si svuota, e server e browser mostrano gli stessi numeri.
   const orderedStations = useMemo(() => {
-    const referenceTime = now ?? latestCommunicationTime(visibleStations);
+    const referenceTime = latestCommunicationTime(visibleStations);
     return sortStationsByPrice(filterReliableStations(visibleStations, fuelType, serviceMode, referenceTime), fuelType, serviceMode);
-  }, [fuelType, now, serviceMode, visibleStations]);
-  const listedStations = useMemo(() => orderedStations.slice(0, listLimit), [listLimit, orderedStations]);
-  const highlightStationIds = useMemo(() => orderedStations.slice(0, 3).map((station) => station.id), [orderedStations]);
+  }, [fuelType, serviceMode, visibleStations]);
+  // Marchi presenti nei risultati, dal piu' diffuso.
+  const brandOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    orderedStations.forEach((station) => counts.set(station.brand.trim(), (counts.get(station.brand.trim()) ?? 0) + 1));
+    return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "it"));
+  }, [orderedStations]);
+  const brandStations = useMemo(
+    () => (brandFilter ? orderedStations.filter((station) => station.brand.trim() === brandFilter) : orderedStations),
+    [brandFilter, orderedStations]
+  );
+  // Distanza: quella calcolata dal server per "vicino a te", altrimenti in linea d'aria dalla posizione.
+  const distanceFrom = useCallback(
+    (station: Station) => station.distanceKm ?? (userPosition ? distanceKm(userPosition, station) : undefined),
+    [userPosition]
+  );
+  const canSortByDistance = isUsingUserPosition && Boolean(userPosition);
+  const sortedStations = useMemo(
+    () =>
+      canSortByDistance && sortMode === "distance"
+        ? [...brandStations].sort((left, right) => (distanceFrom(left) ?? Infinity) - (distanceFrom(right) ?? Infinity))
+        : brandStations,
+    [brandStations, canSortByDistance, distanceFrom, sortMode]
+  );
+  const listedStations = useMemo(() => sortedStations.slice(0, listLimit), [listLimit, sortedStations]);
+  const highlightStationIds = useMemo(() => brandStations.slice(0, 3).map((station) => station.id), [brandStations]);
   const displayStatistic = useMemo(
     () =>
       orderedStations.length > 0
@@ -153,7 +177,12 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
     stationListRef.current?.scrollTo({ top: 0, left: 0 });
     setListLimit(LIST_PAGE_SIZE);
     setActiveStationId(null);
-  }, [orderedStations]);
+  }, [sortedStations]);
+
+  // Nuova zona: il marchio scelto potrebbe non esserci piu'.
+  useEffect(() => {
+    setBrandFilter("");
+  }, [visibleStations]);
 
   // Carosello su telefono/tablet: la scheda al centro dello schermo evidenzia il suo distributore sulla mappa.
   useEffect(() => {
@@ -194,7 +223,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
     }
   }
   const latestUpdate = useMemo(() => formatLatestUpdate(visibleStations, intl), [intl, visibleStations]);
-  const cheapestPrice = orderedStations.length > 0 ? getStationPrice(orderedStations[0], fuelType, serviceMode)?.price : undefined;
+  const cheapestPrice = brandStations.length > 0 ? getStationPrice(brandStations[0], fuelType, serviceMode)?.price : undefined;
   // Rispetto al prezzo tipico (mediana), non alla media: pochi distributori carissimi non gonfiano il risparmio.
   const savingOnTank = cheapestPrice ? Math.max(0, (typicalPrice(displayStatistic) - cheapestPrice) * 50) : 0;
   const filtersSummary = [t.fuelName[fuelType], t.serviceMode[serviceMode], latestUpdate ? t.home.pricesUpdatedAt(latestUpdate) : null]
@@ -210,10 +239,32 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
 
   function handleFuelChange(nextFuelType: FuelTypeCode) {
     setFuelType(nextFuelType);
-    if (nextFuelType === "GPL") {
+    // GPL e metano sono quasi sempre al servito.
+    if (nextFuelType === "GPL" || nextFuelType === "METANO") {
       setServiceMode("served");
     }
   }
+
+  useUrlFilters({
+    provinces,
+    initialProvinceId: initialProvince.id,
+    provinceId: selectedProvince.id,
+    fuelType,
+    serviceMode,
+    includeProvince: !isUsingUserPosition,
+    onRead: (filters) => {
+      if (filters.provinceId) {
+        userSelectedProvinceRef.current = true;
+        setProvinceId(filters.provinceId);
+      }
+      if (filters.fuelType) {
+        handleFuelChange(filters.fuelType);
+      }
+      if (filters.serviceMode) {
+        setServiceMode(filters.serviceMode);
+      }
+    }
+  });
 
   const handleUserPositionChange = useCallback((nextPosition: UserPosition, forceRefresh = false) => {
     userSelectedProvinceRef.current = false;
@@ -310,7 +361,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
     };
   }, [fuelType, isUsingUserPosition, searchVersion, selectedCity, selectedProvince.id, serviceMode, userPosition]);
 
-  const remaining = orderedStations.length - listedStations.length;
+  const remaining = sortedStations.length - listedStations.length;
   const rightColumn = "lg:col-start-2 lg:border-l lg:border-ink/10";
 
   return (
@@ -325,7 +376,42 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
             </h1>
             <p className="mt-0.5 text-xs font-bold text-ink/58">{filtersSummary}</p>
           </div>
-          <span className="shrink-0 rounded-md bg-ink/[0.045] px-3 py-2 text-sm font-black text-ink">{t.map.stationsBadge(orderedStations.length)}</span>
+          <span className="shrink-0 rounded-md bg-ink/[0.045] px-3 py-2 text-sm font-black text-ink">{t.map.stationsBadge(brandStations.length)}</span>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <label className="relative min-w-0 flex-1">
+            <span className="sr-only">{t.map.brand}</span>
+            <select
+              className="h-10 w-full min-w-0 appearance-none truncate rounded-md border border-ink/10 bg-white pl-3 pr-8 text-sm font-bold text-ink shadow-sm transition hover:border-petrol/35"
+              value={brandFilter}
+              onChange={(event) => setBrandFilter(event.target.value)}
+            >
+              <option value="">{t.map.allBrands}</option>
+              {brandOptions.map(([brand, count]) => (
+                <option key={brand} value={brand}>
+                  {brand} ({count})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink/60" size={16} aria-hidden="true" />
+          </label>
+          {canSortByDistance ? (
+            <div className="grid shrink-0 grid-cols-2 rounded-md border border-ink/10 bg-white p-0.5 shadow-sm" role="group" aria-label={t.map.sortBy}>
+              {(["price", "distance"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={sortMode === mode}
+                  className={`h-9 rounded-[5px] px-3 text-xs font-black transition sm:text-sm ${
+                    sortMode === mode ? "bg-petrol text-white" : "text-ink/68 hover:bg-petrol/8 hover:text-petrol"
+                  }`}
+                  onClick={() => setSortMode(mode)}
+                >
+                  {mode === "price" ? t.map.sortPrice : t.map.sortDistance}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </header>
 
@@ -346,7 +432,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
         <div className="map-experience__leaflet w-full min-w-0">
           <DynamicStationMap
             city={selectedCity}
-            stations={orderedStations}
+            stations={brandStations}
             fuelType={fuelType}
             serviceMode={serviceMode}
             referencePrice={typicalPrice(displayStatistic)}
@@ -365,9 +451,12 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
         </div>
       </div>
 
-      <div className={`bg-mint px-4 py-3 text-sm font-black text-white lg:row-start-2 ${rightColumn}`}>
-        {t.map.savings(formatSavings(savingOnTank, intl))}
-      </div>
+      {/* Senza distributori (o senza differenza di prezzo) il "risparmio di 0,00 €" non dice nulla. */}
+      {savingOnTank >= 0.01 ? (
+        <div className={`bg-mint px-4 py-3 text-sm font-black text-white lg:row-start-2 ${rightColumn}`}>
+          {t.map.savings(formatSavings(savingOnTank, intl))}
+        </div>
+      ) : null}
 
       <div className={`flex min-h-0 min-w-0 flex-col bg-white lg:row-start-3 ${rightColumn}`}>
         {locationError ? <p className="m-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{locationError}</p> : null}
@@ -388,6 +477,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
                   fuelType={fuelType}
                   serviceMode={serviceMode}
                   isActive={station.id === activeStationId}
+                  distance={distanceFrom(station)}
                   onSelect={handleSelectStation}
                   t={t}
                   intl={intl}
@@ -452,6 +542,7 @@ function MapStationCard({
   fuelType,
   index,
   isActive,
+  distance,
   onSelect,
   serviceMode,
   station,
@@ -461,6 +552,7 @@ function MapStationCard({
   fuelType: FuelTypeCode;
   index: number;
   isActive: boolean;
+  distance?: number;
   onSelect: (station: Station) => void;
   serviceMode: ServiceMode;
   station: Station;
@@ -501,7 +593,7 @@ function MapStationCard({
             {t.map.updatedOn(new Intl.DateTimeFormat(intl, { day: "numeric", month: "short" }).format(new Date(price.communicatedAt)))}
           </span>
         ) : null}
-        {station.distanceKm ? <span className="rounded-md bg-petrol/10 px-2 py-1 text-xs font-bold text-petrol">{station.distanceKm.toFixed(1)} km</span> : null}
+        {distance !== undefined ? <span className="rounded-md bg-petrol/10 px-2 py-1 text-xs font-bold text-petrol">{distance.toFixed(1)} km</span> : null}
       </div>
       <div className="mt-4 flex items-center justify-between gap-3">
         <a

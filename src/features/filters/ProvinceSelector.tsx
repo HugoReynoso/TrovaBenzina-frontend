@@ -38,7 +38,7 @@ export function ProvinceSelector({ provinces, value, onChange, locale = "it", va
             </option>
           ))}
         </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink/50" size={18} aria-hidden="true" />
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink/60" size={18} aria-hidden="true" />
       </span>
     </label>
   );

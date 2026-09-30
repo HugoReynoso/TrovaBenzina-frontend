@@ -4,6 +4,7 @@ import {
   intlLocale,
   isTranslatedCity,
   LOCALE_ROUTES,
+  LOCALIZED_FUELS,
   localizedCityName,
   type Locale,
   type LocalizedFuel
@@ -81,7 +82,7 @@ const COPY: Record<Locale, SeoCopy> = {
     relatedPlaces: "Località correlate",
     faqTitle: (fuel, city) => `Domande frequenti sul prezzo ${fuel} a ${city}`,
     modeLabel: { self: "self service", served: "servito", all: "miglior prezzo tra self e servito" },
-    fuelWithArticle: { BENZINA: "la benzina", DIESEL: "il diesel", GPL: "il GPL" },
+    fuelWithArticle: { BENZINA: "la benzina", DIESEL: "il diesel", GPL: "il GPL", METANO: "il metano" },
     faqCost: (fuelWithArticle, city) => `Quanto costa ${fuelWithArticle} oggi a ${city}?`,
     faqCostAnswer: ({ province, fuel, mode, average, minimum, count, days, date }) =>
       `In provincia di ${province} il prezzo medio ${fuel} (${mode}) è di ${average} al litro, con un minimo di ${minimum}, calcolato su ${count} distributori con prezzo comunicato negli ultimi ${days} giorni${date ? ` (ultimo aggiornamento: ${date})` : ""}.`,
@@ -121,7 +122,7 @@ const COPY: Record<Locale, SeoCopy> = {
     relatedPlaces: "Other cities",
     faqTitle: (fuel, city) => `FAQ: ${fuel} prices in ${city}`,
     modeLabel: { self: "self-service", served: "full service", all: "best of self-service and full service" },
-    fuelWithArticle: { BENZINA: "petrol", DIESEL: "diesel", GPL: "LPG" },
+    fuelWithArticle: { BENZINA: "petrol", DIESEL: "diesel", GPL: "LPG", METANO: "CNG" },
     faqCost: (fuelWithArticle, city) => `How much does ${fuelWithArticle} cost in ${city} today?`,
     faqCostAnswer: ({ province, fuel, mode, average, minimum, count, days, date }) =>
       `In the province of ${province} the average ${fuel} price (${mode}) is ${average} per litre, with a lowest price of ${minimum}, based on ${count} stations that reported their price in the last ${days} days${date ? ` (latest update: ${date})` : ""}.`,
@@ -160,7 +161,7 @@ const COPY: Record<Locale, SeoCopy> = {
     relatedPlaces: "Otras ciudades",
     faqTitle: (fuel, city) => `Preguntas frecuentes sobre el precio ${fuel} en ${city}`,
     modeLabel: { self: "autoservicio", served: "atendido", all: "mejor precio entre autoservicio y atendido" },
-    fuelWithArticle: { BENZINA: "la gasolina", DIESEL: "el diésel", GPL: "el GLP" },
+    fuelWithArticle: { BENZINA: "la gasolina", DIESEL: "el diésel", GPL: "el GLP", METANO: "el GNC" },
     faqCost: (fuelWithArticle, city) => `¿Cuánto cuesta ${fuelWithArticle} hoy en ${city}?`,
     faqCostAnswer: ({ province, fuel, mode, average, minimum, count, days, date }) =>
       `En la provincia de ${province} el precio medio ${fuel} (${mode}) es de ${average} por litro, con un mínimo de ${minimum}, calculado sobre ${count} gasolineras que comunicaron su precio en los últimos ${days} días${date ? ` (última actualización: ${date})` : ""}.`,
@@ -350,7 +351,7 @@ export function FuelCitySeo({ city, cities, fuelType, stations, statistic, servi
       : [])
   ];
 
-  const relatedFuelTypes = (["BENZINA", "DIESEL", "GPL"] as const).filter((item) => item !== fuelType);
+  const relatedFuelTypes = LOCALIZED_FUELS.filter((item) => item !== fuelType);
   const nearbyCities = relatedCities(city, cities, locale);
   const routes = LOCALE_ROUTES[locale];
   const breadcrumbs = [
@@ -388,19 +389,19 @@ export function FuelCitySeo({ city, cities, fuelType, stations, statistic, servi
         </div>
         <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-md bg-ink/[0.035] p-3">
-            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">{copy.minimum(modeLabel)}</dt>
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">{copy.minimum(modeLabel)}</dt>
             <dd className="mt-1 text-lg font-black text-ink">{hasRecentPrices ? formatEuro(minimumPrice, intl) : copy.notAvailable}</dd>
           </div>
           <div className="rounded-md bg-ink/[0.035] p-3">
-            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">{copy.average(modeLabel)}</dt>
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">{copy.average(modeLabel)}</dt>
             <dd className="mt-1 text-lg font-black text-ink">{hasRecentPrices ? formatEuro(averagePrice, intl) : copy.notAvailable}</dd>
           </div>
           <div className="rounded-md bg-ink/[0.035] p-3">
-            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">{copy.recentStations}</dt>
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">{copy.recentStations}</dt>
             <dd className="mt-1 text-lg font-black text-ink">{recentPrices.length}</dd>
           </div>
           <div className="rounded-md bg-ink/[0.035] p-3">
-            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">{copy.lastCommunication}</dt>
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">{copy.lastCommunication}</dt>
             <dd className="mt-1 text-lg font-black text-ink">{latestDate ?? copy.notAvailable}</dd>
           </div>
         </dl>
@@ -416,7 +417,7 @@ export function FuelCitySeo({ city, cities, fuelType, stations, statistic, servi
                     <span className="mt-1 block text-sm text-ink/64">{station.address}</span>
                     <span className="mt-2 block text-sm font-black text-mint">{price ? formatEuro(price.price, intl) : copy.priceNotAvailable}</span>
                     {price ? (
-                      <span className="mt-1 block text-xs font-bold text-ink/52">
+                      <span className="mt-1 block text-xs font-bold text-ink/60">
                         {copy.communicatedOn(formatDate(price.communicatedAt, intl) ?? copy.dateNotAvailable)}
                       </span>
                     ) : null}

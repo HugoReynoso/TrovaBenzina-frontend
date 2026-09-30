@@ -33,7 +33,7 @@ function languageUrls(alternates: Record<string, string> | undefined) {
 }
 
 const LOCALES: Locale[] = ["it", "en", "es"];
-const FUEL_PRIORITY = { BENZINA: 0.8, DIESEL: 0.8, GPL: 0.7 } as const;
+const FUEL_PRIORITY = { BENZINA: 0.8, DIESEL: 0.8, GPL: 0.7, METANO: 0.6 } as const;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const buildDate = new Date();

@@ -8,7 +8,7 @@ export const siteUrl = "https://www.trovabenzina.it";
 export const defaultOgImage = "/brand/trovabenzina-concept.png";
 
 export const fuelSeo: Record<
-  Extract<FuelTypeCode, "BENZINA" | "DIESEL" | "GPL">,
+  FuelTypeCode,
   { label: string; titleLabel: string; serviceMode: ServiceMode; routePrefix: string }
 > = {
   BENZINA: {
@@ -28,6 +28,13 @@ export const fuelSeo: Record<
     titleLabel: "GPL",
     serviceMode: "served",
     routePrefix: "prezzo-gpl"
+  },
+  // Il metano e' quasi sempre al servito.
+  METANO: {
+    label: "metano",
+    titleLabel: "Metano",
+    serviceMode: "served",
+    routePrefix: "prezzo-metano"
   }
 };
 
@@ -35,7 +42,7 @@ export function absoluteUrl(path: string): string {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export function cityFuelPath(fuelType: Extract<FuelTypeCode, "BENZINA" | "DIESEL" | "GPL">, citySlug: string): string {
+export function cityFuelPath(fuelType: FuelTypeCode, citySlug: string): string {
   return `/${fuelSeo[fuelType].routePrefix}/${citySlug}`;
 }
 
@@ -46,15 +53,15 @@ const CITY_META: Record<Locale, (fuel: LocalizedFuel, city: string) => { title: 
     alt: `${siteName} - prezzi carburante a ${city}`
   }),
   en: (fuel, city) => {
-    const name = { BENZINA: "Petrol", DIESEL: "Diesel", GPL: "LPG" }[fuel];
+    const name = { BENZINA: "Petrol", DIESEL: "Diesel", GPL: "LPG", METANO: "CNG" }[fuel];
     return {
       title: `${name} Price in ${city} Today: Cheapest Fuel Stations`,
-      description: `Compare today's ${fuel === "GPL" ? "LPG" : name.toLowerCase()} prices in ${city}, Italy: cheapest fuel stations, self-service and full-service prices, map and official MIMIT data.`,
+      description: `Compare today's ${fuel === "GPL" || fuel === "METANO" ? name : name.toLowerCase()} prices in ${city}, Italy: cheapest fuel stations, self-service and full-service prices, map and official MIMIT data.`,
       alt: `${siteName} - fuel prices in ${city}`
     };
   },
   es: (fuel, city) => {
-    const name = { BENZINA: "de la gasolina", DIESEL: "del diésel", GPL: "del GLP" }[fuel];
+    const name = { BENZINA: "de la gasolina", DIESEL: "del diésel", GPL: "del GLP", METANO: "del GNC" }[fuel];
     return {
       title: `Precio ${name} en ${city} hoy: gasolineras más baratas`,
       description: `Compara el precio ${name} hoy en ${city} (Italia): gasolineras más baratas, precios en autoservicio y atendido, mapa y datos oficiales del MIMIT.`,

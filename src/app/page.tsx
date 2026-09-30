@@ -8,6 +8,7 @@ import { getProvinces } from "@/lib/api/provinces";
 import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { homeAlternates } from "@/lib/i18n";
+import { provinceCenterCities, toClientStations } from "@/lib/client-data";
 
 export const metadata: Metadata = {
   title: { absolute: "TrovaBenzina | Prezzo benzina oggi e distributori più economici" },
@@ -31,7 +32,7 @@ export default async function HomePage() {
   return (
     <>
       <Header />
-      <HomeExperience pageTitle="TrovaBenzina: prezzo benzina oggi e distributori più economici" cities={cities} provinces={provinces} initialCity={city} initialProvince={province} stations={stations} statistic={statistic} />
+      <HomeExperience pageTitle="TrovaBenzina: prezzo benzina oggi e distributori più economici" cities={provinceCenterCities(cities, provinces)} provinces={provinces} initialCity={city} initialProvince={province} stations={toClientStations(stations)} statistic={statistic} />
       <section className="mx-auto grid max-w-7xl gap-4 px-4 pb-10 md:px-6" aria-labelledby="come-funziona">
         <div className="grid gap-4 rounded-md border border-ink/10 bg-white p-4 shadow-sm md:grid-cols-[1.2fr_0.8fr]">
           <div className="grid gap-3">

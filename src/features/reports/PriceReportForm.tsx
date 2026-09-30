@@ -313,7 +313,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
             <label className="grid gap-2">
               <span className="text-sm font-black text-ink">Comune</span>
               <span className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" size={17} aria-hidden="true" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/60" size={17} aria-hidden="true" />
                 <input
                   className="h-12 w-full rounded-md border border-ink/10 bg-white pl-10 pr-3 text-base"
                   value={citySearch}
@@ -335,7 +335,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
                 onClick={() => handleCitySelect(city.id)}
               >
                 {city.name}
-                <span className={`block text-xs font-bold ${city.id === cityId ? "text-white/76" : "text-ink/50"}`}>{city.provinceName}</span>
+                <span className={`block text-xs font-bold ${city.id === cityId ? "text-white/76" : "text-ink/60"}`}>{city.provinceName}</span>
               </button>
             ))}
           </div>
@@ -351,7 +351,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
                 const nextFuelType = event.target.value as FuelTypeCode;
                 setFuelTypeCode(nextFuelType);
 
-                if (nextFuelType === "GPL") {
+                if (nextFuelType === "GPL" || nextFuelType === "METANO") {
                   setSelfService(false);
                 }
               }}
@@ -383,7 +383,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
               }}
               required
             />
-            <span className={`text-xs font-bold ${priceError ? "text-tomato" : "text-ink/55"}`}>
+            <span className={`text-xs font-bold ${priceError ? "text-tomato" : "text-ink/60"}`}>
               {priceError || "Esempio: scrivi 2123 oppure 2.123, lo sistemiamo noi."}
             </span>
           </label>
@@ -416,7 +416,7 @@ export function PriceReportForm({ cities, initialCity, stations, initialStationI
           <label className="grid gap-2">
             <span className="flex items-center justify-between gap-3 text-sm font-black text-ink">
               Benzinaio
-              {isLoadingStations ? <span className="font-bold text-ink/50">Carico...</span> : <span className="font-bold text-ink/50">{availableStations.length} trovati</span>}
+              {isLoadingStations ? <span className="font-bold text-ink/60">Carico...</span> : <span className="font-bold text-ink/60">{availableStations.length} trovati</span>}
             </span>
             <span className="relative">
               <Store className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-petrol" size={17} aria-hidden="true" />

@@ -101,7 +101,7 @@ export default async function NewsArticlePage({ params }: PageProps) {
         <p className="text-sm font-black uppercase tracking-[0.08em] text-amber">{article.category}</p>
         <h1 className="mt-2 text-3xl font-black leading-tight text-ink">{article.title}</h1>
         <p className="mt-3 text-ink/68">{article.excerpt}</p>
-        <time className="mt-3 block text-sm font-bold text-ink/52" dateTime={article.date}>
+        <time className="mt-3 block text-sm font-bold text-ink/60" dateTime={article.date}>
           Aggiornato il {new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(article.date))}
         </time>
         <article className="mt-8 grid gap-4 leading-relaxed text-ink/78">

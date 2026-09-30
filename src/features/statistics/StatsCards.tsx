@@ -34,7 +34,7 @@ export function StatsCards({ statistic, compact = false, locale = "it" }: StatsC
           return (
             <article className={statClass} key={item.label}>
               <Icon className="mb-3 text-petrol" size={20} aria-hidden="true" />
-              <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink/56">{item.label}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">{item.label}</p>
               <p className="mt-1 text-xl font-black text-ink">{item.value}</p>
             </article>
           );

@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { preconnect } from "react-dom";
 import { RouteLoadingIndicator } from "@/components/RouteLoadingIndicator";
 import { defaultOgImage, siteName, siteUrl } from "@/lib/seo";
 import "./globals.css";
@@ -48,6 +49,10 @@ export const metadata: Metadata = {
   }
 };
 
+export const viewport: Viewport = {
+  themeColor: "#165a67"
+};
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const jsonLd = [
     {
@@ -73,6 +78,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       logo: `${siteUrl}/brand/trovabenzina-logo.svg`
     }
   ];
+
+  // Le tessere della mappa arrivano da OpenStreetMap: apriamo la connessione mentre la pagina carica.
+  ["a", "b", "c"].forEach((server) => preconnect(`https://${server}.tile.openstreetmap.org`));
 
   return (
     <html lang="it" suppressHydrationWarning>

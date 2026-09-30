@@ -58,6 +58,12 @@ select {
   }
 }
 
+/* Zoom in basso a destra, sopra il bottone "Posizionami" (alto 44px, a 28px dal fondo). */
+.leaflet-bottom.leaflet-right .leaflet-control-zoom {
+  margin-bottom: 84px;
+  margin-right: 12px;
+}
+
 .price-marker {
   background: transparent;
   border: 0;

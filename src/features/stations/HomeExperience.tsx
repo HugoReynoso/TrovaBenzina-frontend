@@ -17,12 +17,12 @@ import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { locateUser } from "@/lib/geolocation";
 import { intlLocale, type Locale } from "@/lib/i18n";
+import { useUrlFilters } from "@/lib/useUrlFilters";
 import { getMessages } from "@/lib/messages";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic, buildStatisticFromStations, typicalPrice } from "@/lib/statistics";
 import { filterReliableStations, formatLatestUpdate, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
 import { useMediaQuery } from "@/lib/useMediaQuery";
-import { useNow } from "@/lib/useNow";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City, Province } from "@/types/location";
 import type { Station } from "@/types/station";
@@ -93,7 +93,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const [focusRequest, setFocusRequest] = useState<StationFocusRequest | null>(null);
   const mapSectionRef = useRef<HTMLDivElement>(null);
-  const now = useNow();
   const userSelectedProvinceRef = useRef(false);
   const dataCacheRef = useRef(new Map<string, LoadedCityData>());
   const loadedKeyRef = useRef(`province:${initialProvince.id}:0`);
@@ -114,13 +113,13 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const rankingTitle = isUsingUserPosition
     ? t.home.rankingNear(topCount)
     : t.home.rankingProvince(selectedProvince.name, topCount);
-  // Mappa, classifica e statistiche usano gli stessi distributori: prezzi comunicati negli ultimi
-  // 4 giorni e non anomali. Prima dell'idratazione il riferimento e' la comunicazione piu' recente
-  // nei dati, cosi' server e browser mostrano la stessa lista.
+  // Mappa, classifica, statistiche e conteggi usano gli stessi distributori: prezzi non anomali e
+  // comunicati nei 4 giorni prima dell'ultimo aggiornamento disponibile (non di oggi): se MIMIT
+  // pubblica in ritardo il sito non si svuota, e server e browser mostrano gli stessi numeri.
   const reliableStations = useMemo(() => {
-    const referenceTime = now ?? latestCommunicationTime(visibleStations);
+    const referenceTime = latestCommunicationTime(visibleStations);
     return sortStationsByPrice(filterReliableStations(visibleStations, fuelType, serviceMode, referenceTime), fuelType, serviceMode);
-  }, [fuelType, now, serviceMode, visibleStations]);
+  }, [fuelType, serviceMode, visibleStations]);
   const cheapest = useMemo(() => reliableStations.slice(0, topCount), [reliableStations, topCount]);
   const highlightStationIds = useMemo(() => reliableStations.slice(0, 3).map((station) => station.id), [reliableStations]);
   const displayStatistic = useMemo(
@@ -171,7 +170,8 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   function handleFuelChange(nextFuelType: FuelTypeCode) {
     setFuelType(nextFuelType);
 
-    if (nextFuelType === "GPL") {
+    // GPL e metano sono quasi sempre al servito.
+    if (nextFuelType === "GPL" || nextFuelType === "METANO") {
       setServiceMode("served");
     }
   }
@@ -241,6 +241,27 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       setError(t.location.unavailable);
     }
   }
+
+  useUrlFilters({
+    provinces,
+    initialProvinceId: initialProvince.id,
+    provinceId: selectedProvince.id,
+    fuelType,
+    serviceMode,
+    includeProvince: !isUsingUserPosition,
+    onRead: (filters) => {
+      if (filters.provinceId) {
+        userSelectedProvinceRef.current = true;
+        setProvinceId(filters.provinceId);
+      }
+      if (filters.fuelType) {
+        handleFuelChange(filters.fuelType);
+      }
+      if (filters.serviceMode) {
+        setServiceMode(filters.serviceMode);
+      }
+    }
+  });
 
   const handleUserPositionChange = useCallback((nextPosition: UserPosition, forceRefresh = false) => {
     userSelectedProvinceRef.current = false;
@@ -378,10 +399,10 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                     </h1>
                   )
                 ) : (
-                  <p className="text-sm font-black uppercase tracking-[0.08em] text-ink/56">{t.filters.filterTitle}</p>
+                  <p className="text-sm font-black uppercase tracking-[0.08em] text-ink/60">{t.filters.filterTitle}</p>
                 )}
                 {/* Una sola riga di riepilogo: i filtri scelti sono gia' visibili nei selettori. */}
-                <p className="mt-1 text-xs font-bold text-ink/56 md:text-sm">{summaryLine}</p>
+                <p className="mt-1 text-xs font-bold text-ink/60 md:text-sm">{summaryLine}</p>
               </div>
               <button
                 type="button"
@@ -410,7 +431,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                   <LocateFixed className={isLocating ? "animate-pulse" : undefined} size={17} aria-hidden="true" />
                   {isLocating ? t.location.locating : t.location.useMyLocation}
                 </button>
-                <span className="ml-1 text-xs font-black uppercase tracking-[0.08em] text-ink/56">{t.filters.quick}</span>
+                <span className="ml-1 text-xs font-black uppercase tracking-[0.08em] text-ink/60">{t.filters.quick}</span>
                 {quickProvinces.map((province, index) => (
                   <button
                     key={province.id}

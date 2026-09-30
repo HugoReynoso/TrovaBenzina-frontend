@@ -79,7 +79,7 @@ export function CitySelector({ cities, value, onChange }: CitySelectorProps) {
 
       {popularCities.length > 0 ? (
         <div className="grid gap-2">
-          <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink/52">Citta principali</p>
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink/60">Citta principali</p>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {popularCities.slice(0, 6).map((city) => (
               <button

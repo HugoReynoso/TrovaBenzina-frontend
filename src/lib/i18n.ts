@@ -20,7 +20,7 @@ export function openGraphLocale(locale: Locale): string {
   return SUPPORTED_LOCALES.find((item) => item.code === locale)?.openGraph ?? "it_IT";
 }
 
-export type LocalizedFuel = Extract<FuelTypeCode, "BENZINA" | "DIESEL" | "GPL">;
+export type LocalizedFuel = FuelTypeCode;
 
 interface LocaleRoutes {
   home: string;
@@ -35,23 +35,23 @@ export const LOCALE_ROUTES: Record<Locale, LocaleRoutes> = {
     home: "/",
     map: "/mappa",
     fuelIndex: "/prezzi-carburanti",
-    fuel: { BENZINA: "/prezzo-benzina", DIESEL: "/prezzo-diesel", GPL: "/prezzo-gpl" }
+    fuel: { BENZINA: "/prezzo-benzina", DIESEL: "/prezzo-diesel", GPL: "/prezzo-gpl", METANO: "/prezzo-metano" }
   },
   en: {
     home: "/en",
     map: "/en/map",
     fuelIndex: "/en/fuel-prices",
-    fuel: { BENZINA: "/en/petrol-price", DIESEL: "/en/diesel-price", GPL: "/en/lpg-price" }
+    fuel: { BENZINA: "/en/petrol-price", DIESEL: "/en/diesel-price", GPL: "/en/lpg-price", METANO: "/en/cng-price" }
   },
   es: {
     home: "/es",
     map: "/es/mapa",
     fuelIndex: "/es/precios-combustible",
-    fuel: { BENZINA: "/es/precio-gasolina", DIESEL: "/es/precio-diesel", GPL: "/es/precio-glp" }
+    fuel: { BENZINA: "/es/precio-gasolina", DIESEL: "/es/precio-diesel", GPL: "/es/precio-glp", METANO: "/es/precio-gnc" }
   }
 };
 
-export const LOCALIZED_FUELS: LocalizedFuel[] = ["BENZINA", "DIESEL", "GPL"];
+export const LOCALIZED_FUELS: LocalizedFuel[] = ["BENZINA", "DIESEL", "GPL", "METANO"];
 
 export function cityFuelPathFor(locale: Locale, fuel: LocalizedFuel, citySlug: string): string {
   return `${LOCALE_ROUTES[locale].fuel[fuel]}/${citySlug}`;

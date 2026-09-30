@@ -9,6 +9,7 @@ import { getStations } from "@/lib/api/stations";
 import { cityFuelPathFor, homeAlternates, LOCALE_ROUTES, localizedCityName, openGraphLocale, type Locale } from "@/lib/i18n";
 import { defaultOgImage, siteName } from "@/lib/seo";
 import { buildCityFuelStatistic } from "@/lib/statistics";
+import { provinceCenterCities, toClientStations } from "@/lib/client-data";
 
 type ForeignLocale = Exclude<Locale, "it">;
 
@@ -93,11 +94,11 @@ export async function ForeignHomePage({ locale }: { locale: ForeignLocale }) {
       <Header />
       <HomeExperience
         pageTitle={copy.h1}
-        cities={cities}
+        cities={provinceCenterCities(cities, provinces)}
         provinces={provinces}
         initialCity={city}
         initialProvince={province}
-        stations={stations}
+        stations={toClientStations(stations)}
         statistic={statistic}
         locale={locale}
       />
