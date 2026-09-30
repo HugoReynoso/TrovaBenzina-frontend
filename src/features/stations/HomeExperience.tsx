@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, LocateFixed, Search, Trophy } from "lucide-react";
+import { ChevronDown, ChevronUp, LocateFixed, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Accordion } from "@/components/Accordion";
 import { FuelSelector } from "@/features/filters/FuelSelector";
@@ -19,8 +19,9 @@ import { locateUser } from "@/lib/geolocation";
 import { intlLocale, type Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
-import { buildCityFuelStatistic } from "@/lib/statistics";
+import { buildCityFuelStatistic, buildStatisticFromStations, typicalPrice } from "@/lib/statistics";
 import { filterReliableStations, formatLatestUpdate, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { useNow } from "@/lib/useNow";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City, Province } from "@/types/location";
@@ -95,7 +96,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const now = useNow();
   const userSelectedProvinceRef = useRef(false);
   const dataCacheRef = useRef(new Map<string, LoadedCityData>());
-  const loadedKeyRef = useRef(`province:${initialProvince.id}:BENZINA:self:0`);
+  const loadedKeyRef = useRef(`province:${initialProvince.id}:0`);
 
   const selectedProvince = useMemo(
     () => provinces.find((province) => province.id === provinceId) ?? initialProvince,
@@ -107,15 +108,30 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   );
   const selectedCityId = selectedCity.id;
   const isUsingUserPosition = Boolean(userPosition) && !userSelectedProvinceRef.current;
+  // Sui monitor grandi c'e' spazio per una top 10.
+  const isWideScreen = useMediaQuery("(min-width: 1536px)");
+  const topCount = isWideScreen ? 10 : 5;
   const rankingTitle = isUsingUserPosition
-    ? t.home.rankingNear
-    : t.home.rankingProvince(selectedProvince.name);
-  // Top 5: solo prezzi comunicati negli ultimi 4 giorni. Prima dell'idratazione usiamo come
-  // riferimento la comunicazione piu' recente nei dati, cosi' server e browser mostrano la stessa lista.
-  const cheapest = useMemo(() => {
+    ? t.home.rankingNear(topCount)
+    : t.home.rankingProvince(selectedProvince.name, topCount);
+  // Mappa, classifica e statistiche usano gli stessi distributori: prezzi comunicati negli ultimi
+  // 4 giorni e non anomali. Prima dell'idratazione il riferimento e' la comunicazione piu' recente
+  // nei dati, cosi' server e browser mostrano la stessa lista.
+  const reliableStations = useMemo(() => {
     const referenceTime = now ?? latestCommunicationTime(visibleStations);
-    return sortStationsByPrice(filterReliableStations(visibleStations, fuelType, serviceMode, referenceTime), fuelType, serviceMode).slice(0, 5);
+    return sortStationsByPrice(filterReliableStations(visibleStations, fuelType, serviceMode, referenceTime), fuelType, serviceMode);
   }, [fuelType, now, serviceMode, visibleStations]);
+  const cheapest = useMemo(() => reliableStations.slice(0, topCount), [reliableStations, topCount]);
+  const highlightStationIds = useMemo(() => reliableStations.slice(0, 3).map((station) => station.id), [reliableStations]);
+  const displayStatistic = useMemo(
+    () =>
+      reliableStations.length > 0
+        ? buildStatisticFromStations(selectedCity, fuelType, serviceMode, reliableStations)
+        : visibleStations.length > 0
+          ? buildCityFuelStatistic(selectedCity, fuelType, visibleStations)
+          : currentStatistic,
+    [currentStatistic, fuelType, reliableStations, selectedCity, serviceMode, visibleStations]
+  );
 
   function handleSelectStation(station: Station) {
     setFocusRequest({
@@ -125,7 +141,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
       requestId: Date.now()
     });
 
-    // Sul telefono la top e' sotto la mappa: scorri fino alla mappa se non e' visibile.
+    // Sul telefono la top e' sopra la mappa: scorri fino alla mappa se non e' visibile.
     const mapSection = mapSectionRef.current;
     if (mapSection) {
       const rect = mapSection.getBoundingClientRect();
@@ -146,7 +162,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   );
 
   useEffect(() => {
-    dataCacheRef.current.set(`province:${initialProvince.id}:BENZINA:self:0`, {
+    dataCacheRef.current.set(`province:${initialProvince.id}:0`, {
       stations,
       statistic
     });
@@ -163,11 +179,6 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   function handleProvinceChange(nextProvinceId: number) {
     userSelectedProvinceRef.current = true;
     setProvinceId(nextProvinceId);
-  }
-
-  function searchSelectedProvince() {
-    userSelectedProvinceRef.current = true;
-    setSearchVersion((version) => version + 1);
   }
 
   function selectQuickProvince(nextProvinceId: number) {
@@ -246,9 +257,10 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
   useEffect(() => {
     const shouldUseUserPosition = isUsingUserPosition;
+    // Per provincia arrivano tutti i prezzi: cambiare carburante o modalita' filtra in locale, senza ricaricare.
     const requestKey = shouldUseUserPosition
       ? `nearby:${userPosition?.latitude.toFixed(4)}:${userPosition?.longitude.toFixed(4)}:${fuelType}:${serviceMode}:${searchVersion}`
-      : `province:${selectedProvince.id}:${fuelType}:${serviceMode}:${searchVersion}`;
+      : `province:${selectedProvince.id}:${searchVersion}`;
 
     if (requestKey === loadedKeyRef.current) {
       return;
@@ -336,31 +348,41 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     };
   }, [fuelType, isUsingUserPosition, searchVersion, selectedCity, selectedCityId, selectedProvince.id, serviceMode, userPosition]);
 
+  const summaryLine = [
+    isUsingUserPosition ? t.location.aroundYou : null,
+    t.home.stationsCount(reliableStations.length),
+    latestUpdate ? t.home.pricesUpdatedAt(latestUpdate) : null
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <>
       {isLoading ? <DataLoadingOverlay title={t.home.loadingTitle} text={t.home.loadingText} /> : null}
-      <section className="mx-auto grid max-w-7xl gap-3 px-3 py-3 md:gap-5 md:px-6 md:py-5 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
-        <div className="grid gap-3 md:gap-4">
-          <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:gap-4 md:p-4">
+      <section className="mx-auto grid w-full max-w-[1600px] gap-3 px-3 py-3 md:gap-5 md:px-6 md:py-5 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start 2xl:grid-cols-[minmax(0,1fr)_480px]">
+        <div className="grid min-w-0 gap-3 md:gap-4">
+          <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:p-4">
             <div className="flex items-start justify-between gap-3">
-              {showTitle ? (
-                <div className="min-w-0">
-                  {pageTitle ? (
+              <div className="min-w-0">
+                {showTitle ? (
+                  pageTitle ? (
                     <>
-                      <h1 className="text-xl font-black leading-tight text-ink md:text-4xl">{pageTitle}</h1>
+                      <h1 className="text-lg font-black leading-tight text-ink md:text-2xl 2xl:text-3xl">{pageTitle}</h1>
                       <p className="mt-1 text-sm font-bold text-ink/62 md:text-base">
                         {t.home.priceInProvince(fuelType, selectedProvince.name)}
                       </p>
                     </>
                   ) : (
-                    <h1 className="text-xl font-black leading-tight text-ink md:text-4xl">
+                    <h1 className="text-lg font-black leading-tight text-ink md:text-2xl 2xl:text-3xl">
                       {t.home.priceInProvince(fuelType, selectedProvince.name)}
                     </h1>
-                  )}
-                </div>
-              ) : (
-                <p className="min-w-0 text-sm font-black uppercase tracking-[0.08em] text-ink/56">{t.filters.filterTitle}</p>
-              )}
+                  )
+                ) : (
+                  <p className="text-sm font-black uppercase tracking-[0.08em] text-ink/56">{t.filters.filterTitle}</p>
+                )}
+                {/* Una sola riga di riepilogo: i filtri scelti sono gia' visibili nei selettori. */}
+                <p className="mt-1 text-xs font-bold text-ink/56 md:text-sm">{summaryLine}</p>
+              </div>
               <button
                 type="button"
                 className="grid size-11 shrink-0 place-items-center rounded-md bg-petrol text-white shadow-sm transition hover:bg-[#104955] lg:hidden"
@@ -371,21 +393,14 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                 <LocateFixed className={isLocating ? "animate-pulse" : undefined} size={20} aria-hidden="true" />
               </button>
             </div>
-            <div className="grid gap-2 rounded-md bg-ink/[0.035] p-2.5 md:gap-3 md:p-3 lg:grid-cols-[1.05fr_0.9fr_1.15fr_auto] lg:items-end">
+            {/* I risultati si aggiornano appena cambia un filtro: non serve un bottone "Trova". */}
+            <div className="grid gap-2 rounded-md bg-ink/[0.035] p-2.5 md:gap-3 md:p-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
               <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                 <ProvinceSelector provinces={provinces} value={selectedProvince.id} onChange={handleProvinceChange} locale={locale} />
                 <FuelSelector value={fuelType} onChange={handleFuelChange} locale={locale} />
               </div>
               <ServiceModeSelector value={serviceMode} onChange={setServiceMode} locale={locale} />
-              <button
-                type="button"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-petrol px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#104955] md:h-12"
-                onClick={searchSelectedProvince}
-              >
-                <Search size={17} aria-hidden="true" />
-                {t.filters.find}
-              </button>
-              <div className="hidden lg:col-span-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2">
+              <div className="hidden lg:col-span-3 lg:flex lg:flex-wrap lg:items-center lg:gap-2">
                 <button
                   type="button"
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-petrol/20 bg-white px-4 text-sm font-black text-petrol shadow-sm transition hover:border-petrol/45"
@@ -395,7 +410,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                   <LocateFixed className={isLocating ? "animate-pulse" : undefined} size={17} aria-hidden="true" />
                   {isLocating ? t.location.locating : t.location.useMyLocation}
                 </button>
-                <span className="ml-1 text-xs font-black uppercase tracking-[0.08em] text-ink/45">{t.filters.quick}</span>
+                <span className="ml-1 text-xs font-black uppercase tracking-[0.08em] text-ink/56">{t.filters.quick}</span>
                 {quickProvinces.map((province, index) => (
                   <button
                     key={province.id}
@@ -414,53 +429,21 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                 ))}
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-ink/62">
-              <span className="rounded-md bg-petrol/8 px-2 py-1 text-petrol">{isUsingUserPosition ? t.location.aroundYou : selectedProvince.name}</span>
-              <span className="rounded-md bg-amber/20 px-2 py-1">{t.home.stationsCount(visibleStations.length)}</span>
-              {latestUpdate ? <span className="rounded-md bg-ink/[0.045] px-2 py-1">{t.home.pricesUpdatedAt(latestUpdate)}</span> : null}
-              <span className="rounded-md bg-mint/12 px-2 py-1 text-mint">{t.serviceMode[serviceMode]}</span>
-            </div>
             {error ? <p className="rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
           </div>
 
-          <div ref={mapSectionRef} className="scroll-mt-20">
-          {visibleStations.length > 0 ? (
-            <DynamicStationMap
-              city={selectedCity}
-              stations={visibleStations}
-              fuelType={fuelType}
-              serviceMode={serviceMode}
-              averagePrice={currentStatistic.averagePrice}
-              userPosition={isUsingUserPosition ? userPosition : null}
-              locateRequestId={locateRequestId}
-              onLocationStatusChange={handleLocationStatusChange}
-              onUserPositionChange={(position) => handleUserPositionChange(position, true)}
-              focusRequest={focusRequest}
-              locale={locale}
-            />
-          ) : (
-            <div className="grid h-[52vh] min-h-[360px] place-items-center rounded-md border border-dashed border-ink/20 bg-white text-center shadow-sm">
-              <div>
-                <p className="text-lg font-black text-ink">{t.home.noStations}</p>
-                <button className="mt-3 rounded-md bg-petrol px-4 py-2 font-black text-white" type="button" onClick={() => setFuelType("BENZINA")}>
-                  {t.home.removeFilters}
-                </button>
-              </div>
-            </div>
-          )}
-          </div>
-
-          <section className="rounded-md border border-ink/10 bg-white p-3 shadow-sm md:hidden" aria-labelledby="mobile-top-5">
+          {/* Telefono e tablet: la classifica viene prima della mappa, e' la risposta a "dove costa meno?". */}
+          <section className="rounded-md border border-ink/10 bg-white p-3 shadow-sm lg:hidden" aria-labelledby="mobile-top-5">
             <button
               type="button"
               className="flex w-full items-center justify-between gap-3 text-left"
               onClick={() => setMobileRankingOpen((isOpen) => !isOpen)}
               aria-expanded={mobileRankingOpen}
             >
-              <span>
-                <span id="mobile-top-5" className="inline-flex items-center gap-2 text-base font-black leading-tight text-ink">
-                  <Trophy size={20} aria-hidden="true" />
-                  {rankingTitle}
+              <span className="min-w-0">
+                <span id="mobile-top-5" className="flex items-start gap-2 text-base font-black leading-tight text-ink">
+                  <Trophy className="mt-0.5 shrink-0" size={18} aria-hidden="true" />
+                  <span>{rankingTitle}</span>
                 </span>
                 <span className="mt-1 block text-xs font-bold text-ink/62">{t.home.rankingSubtitle}</span>
               </span>
@@ -484,16 +467,47 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             ) : null}
           </section>
 
+          <div
+            ref={mapSectionRef}
+            className="h-[54vh] min-h-[360px] scroll-mt-20 sm:h-[60vh] lg:h-[calc(100dvh-8rem)] lg:max-h-[860px] lg:min-h-[480px]"
+          >
+            {reliableStations.length > 0 ? (
+              <DynamicStationMap
+                city={selectedCity}
+                stations={reliableStations}
+                fuelType={fuelType}
+                serviceMode={serviceMode}
+                referencePrice={typicalPrice(displayStatistic)}
+                highlightStationIds={highlightStationIds}
+                userPosition={isUsingUserPosition ? userPosition : null}
+                locateRequestId={locateRequestId}
+                onLocationStatusChange={handleLocationStatusChange}
+                onUserPositionChange={(position) => handleUserPositionChange(position, true)}
+                focusRequest={focusRequest}
+                locale={locale}
+              />
+            ) : (
+              <div className="grid h-full place-items-center rounded-md border border-dashed border-ink/20 bg-white p-4 text-center shadow-sm">
+                <div>
+                  <p className="text-lg font-black text-ink">{t.home.noStations}</p>
+                  <button className="mt-3 rounded-md bg-petrol px-4 py-2 font-black text-white" type="button" onClick={() => setFuelType("BENZINA")}>
+                    {t.home.removeFilters}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <Link
-            className="inline-flex items-center justify-center rounded-md border border-petrol/25 bg-white px-5 py-3 text-sm font-black text-petrol shadow-sm md:hidden"
+            className="inline-flex items-center justify-center rounded-md border border-petrol/25 bg-white px-5 py-3 text-sm font-black text-petrol shadow-sm lg:hidden"
             href="/segnala-prezzo"
           >
             {t.home.reportPrice}
           </Link>
         </div>
 
-        <aside className="hidden grid-cols-1 gap-4 lg:grid">
-          <StatsCards statistic={currentStatistic} compact locale={locale} />
+        <aside className="hidden min-w-0 grid-cols-1 gap-4 lg:grid">
+          <StatsCards statistic={displayStatistic} compact locale={locale} />
           <CheapestStations
             stations={cheapest}
             fuelType={fuelType}
@@ -506,12 +520,12 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
         </aside>
       </section>
 
-      <main className="mx-auto grid max-w-7xl gap-5 px-4 pb-8 md:px-6">
+      <main className="mx-auto grid w-full max-w-[1600px] gap-5 px-4 pb-8 md:px-6">
         <div className="grid gap-5 lg:hidden">
-          <StatsCards statistic={currentStatistic} locale={locale} />
+          <StatsCards statistic={displayStatistic} locale={locale} />
         </div>
 
-        <CitySummary city={selectedCity} statistic={currentStatistic} provinceName={selectedProvince.name} locale={locale} />
+        <CitySummary city={selectedCity} statistic={displayStatistic} provinceName={selectedProvince.name} locale={locale} />
 
         {/* Infografica e notizie sono solo in italiano */}
         {locale === "it" ? (

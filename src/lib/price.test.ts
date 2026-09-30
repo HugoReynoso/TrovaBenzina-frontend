@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filterReliableStations, getPriceTone, getStationPrice, sortStationsByPrice } from "./price";
-import { buildCityFuelStatistic } from "./statistics";
+import { buildCityFuelStatistic, buildStatisticFromStations, typicalPrice } from "./statistics";
 import type { Station } from "@/types/station";
 import { mockStations } from "@/mocks/stations";
 
@@ -53,5 +53,34 @@ describe("price utilities", () => {
       stations
     );
     expect(statistic.minimumPrice).toBe(1.629);
+  });
+
+  it("builds statistics on the same stations shown in the list", () => {
+    const city = { id: 1, name: "Milano", slug: "milano", provinceId: 1, provinceName: "Milano", regionName: "Lombardia", latitude: 45, longitude: 9 };
+    const stations: Station[] = [1.8, 1.9, 2.0, 2.9].map((price, index) => ({
+      id: index + 1,
+      mimitId: String(index + 1),
+      name: `Station ${index + 1}`,
+      brand: "Test",
+      address: "Via Test",
+      latitude: 45,
+      longitude: 9,
+      cityId: 1,
+      cityName: "Milano",
+      provinceName: "Milano",
+      regionName: "Lombardia",
+      prices: [
+        { fuelTypeCode: "BENZINA", fuelTypeName: "Benzina", price, selfService: true, communicatedAt: "2026-09-26T10:00:00Z" },
+        { fuelTypeCode: "BENZINA", fuelTypeName: "Benzina", price: price + 0.2, selfService: false, communicatedAt: "2026-09-26T10:00:00Z" }
+      ]
+    }));
+
+    const statistic = buildStatisticFromStations(city, "BENZINA", "self", stations);
+    expect(statistic.stationCount).toBe(4);
+    expect(statistic.minimumPrice).toBe(1.8);
+    // La mediana non viene trascinata in alto dal distributore a 2,9 come la media.
+    expect(statistic.medianPrice).toBe(1.95);
+    expect(typicalPrice(statistic)).toBe(1.95);
+    expect(statistic.averagePrice).toBeGreaterThan(2.1);
   });
 });

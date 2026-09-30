@@ -42,7 +42,7 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
           <h2 id="piu-economici" className="text-lg font-black leading-tight text-ink md:text-xl">
             {title ?? t.cheapest.fallbackTitle(cityName)}
           </h2>
-          <span className="rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">{t.cheapest.top(stations.length)}</span>
+          <span className="shrink-0 whitespace-nowrap rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">{t.cheapest.top(stations.length)}</span>
         </div>
       ) : null}
       <ol className={showHeader ? "mt-3 grid gap-2 md:mt-4 md:gap-3" : "grid gap-2"}>
@@ -75,15 +75,16 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
                 <BrandLogo brand={station.brand} compact />
               </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-black text-ink md:text-base">{station.name}</p>
-                <p className="truncate text-xs text-ink/62 md:text-sm">
+                {/* Due righe al massimo invece di troncare: nome e indirizzo restano leggibili anche nella colonna laterale. */}
+                <p className="line-clamp-2 break-words text-sm font-black leading-tight text-ink md:text-base">{station.name}</p>
+                <p className="mt-0.5 line-clamp-2 break-words text-xs leading-snug text-ink/62 md:text-sm">
                   {station.brand} · {station.distanceKm ? `${station.distanceKm.toFixed(1)} km` : station.address}
                 </p>
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-sm font-black text-mint md:text-base">{price ? formatEuro(price.price, intl) : "-"}</p>
                 <a
-                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-bold text-petrol hover:bg-petrol/8 md:px-2 md:text-xs"
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-bold text-petrol hover:bg-petrol/8 md:px-2"
                   href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}
                   target="_blank"
                   rel="noreferrer"

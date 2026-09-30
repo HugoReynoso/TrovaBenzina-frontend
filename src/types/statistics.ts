@@ -5,6 +5,8 @@ export interface CityFuelStatistic {
   cityName: string;
   fuelTypeCode: FuelTypeCode;
   averagePrice: number;
+  /** Prezzo mediano: meno sensibile ai pochi distributori molto cari (autostrade, servito). */
+  medianPrice?: number;
   minimumPrice: number;
   maximumPrice: number;
   stationCount: number;

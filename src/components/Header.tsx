@@ -50,7 +50,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/92 backdrop-blur" suppressHydrationWarning>
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6" suppressHydrationWarning>
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-3 md:px-6" suppressHydrationWarning>
         <Link href={LOCALE_ROUTES[locale].home} className="flex items-center gap-2 tracking-normal text-ink" aria-label="TrovaBenzina home" onClick={() => setMenuOpen(false)}>
           <Image src={withBasePath("/brand/trovabenzina-mark.svg")} alt="" width={40} height={40} priority />
           <span className="grid leading-none">
@@ -58,7 +58,7 @@ export function Header() {
               <span>Trova</span>
               <span className="text-[#d49318]">Benzina</span>
             </span>
-            <span className="mt-0.5 text-[10px] font-bold leading-tight text-petrol md:text-xs">{t.tagline}</span>
+            <span className="mt-0.5 text-xs font-bold leading-tight text-petrol max-[389px]:hidden">{t.tagline}</span>
           </span>
         </Link>
         <nav aria-label={t.mainNavigation} className="hidden items-center gap-1 md:flex">
@@ -95,7 +95,7 @@ export function Header() {
       </div>
       {menuOpen ? (
         <nav className="border-t border-ink/10 bg-white px-4 py-3 shadow-sm md:hidden" aria-label={t.mobileNavigation}>
-          <div className="mx-auto grid max-w-7xl gap-2">
+          <div className="mx-auto grid max-w-[1600px] gap-2">
             {navItems.map((item) => {
               const isActive = isActivePath(pathname, item.href, item.exact);
               return (

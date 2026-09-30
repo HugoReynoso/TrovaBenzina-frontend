@@ -1,5 +1,5 @@
-import { isPriceRecent, latestCommunicationTime, MAX_PLAUSIBLE_PRICE_RATIO, MIN_PLAUSIBLE_PRICE_RATIO } from "@/lib/price";
-import type { FuelTypeCode } from "@/types/fuel";
+import { getStationPrice, isPriceRecent, latestCommunicationTime, MAX_PLAUSIBLE_PRICE_RATIO, MIN_PLAUSIBLE_PRICE_RATIO } from "@/lib/price";
+import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { City } from "@/types/location";
 import type { Station, StationPrice } from "@/types/station";
 import type { CityFuelStatistic } from "@/types/statistics";
@@ -62,9 +62,50 @@ export function buildCityFuelStatistic(city: City, fuelType: FuelTypeCode, stati
     cityName: city.name,
     fuelTypeCode: fuelType,
     averagePrice: Number((values.reduce((total, price) => total + price, 0) / values.length).toFixed(3)),
+    medianPrice: Number(median(values).toFixed(3)),
     minimumPrice: Math.min(...values),
     maximumPrice: Math.max(...values),
     stationCount: new Set(prices.map((entry) => entry.stationId)).size,
     updatedAt: latestUpdate ?? ""
   };
+}
+
+/**
+ * Statistiche calcolate sugli stessi distributori mostrati in lista e sulla mappa
+ * (gia' filtrati con filterReliableStations), cosi' conteggi e prezzi coincidono ovunque.
+ */
+export function buildStatisticFromStations(
+  city: City,
+  fuelType: FuelTypeCode,
+  serviceMode: ServiceMode,
+  stations: Station[]
+): CityFuelStatistic {
+  const prices = stations
+    .map((station) => getStationPrice(station, fuelType, serviceMode))
+    .filter((price): price is StationPrice => Boolean(price));
+  const values = prices.map((price) => price.price);
+  const latestUpdate = prices
+    .map((price) => price.communicatedAt)
+    .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
+
+  if (values.length === 0) {
+    return buildCityFuelStatistic(city, fuelType, []);
+  }
+
+  return {
+    cityId: city.id,
+    cityName: city.name,
+    fuelTypeCode: fuelType,
+    averagePrice: Number((values.reduce((total, price) => total + price, 0) / values.length).toFixed(3)),
+    medianPrice: Number(median(values).toFixed(3)),
+    minimumPrice: Math.min(...values),
+    maximumPrice: Math.max(...values),
+    stationCount: prices.length,
+    updatedAt: latestUpdate ?? ""
+  };
+}
+
+/** Prezzo di riferimento "tipico" della zona: la mediana se disponibile, altrimenti la media. */
+export function typicalPrice(statistic: CityFuelStatistic): number {
+  return statistic.medianPrice ?? statistic.averagePrice;
 }

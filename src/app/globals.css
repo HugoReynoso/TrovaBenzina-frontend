@@ -95,9 +95,41 @@ select {
 }
 
 .price-marker__price {
-  font-size: 11px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1.15;
+}
+
+/* Distributori della top: bordo spesso e numero della posizione. */
+.price-marker__card--best {
+  border: 2px solid #137348;
+  box-shadow: 0 10px 22px rgb(19 115 72 / 0.32);
+}
+
+.price-marker__rank {
+  align-items: center;
+  background: #137348;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  display: flex;
+  font-size: 12px;
+  font-weight: 900;
+  height: 22px;
+  justify-content: center;
+  left: -10px;
+  position: absolute;
+  top: -10px;
+  width: 22px;
+}
+
+/* Distributore selezionato dalla lista. */
+.price-marker__card--active {
+  outline: 3px solid #165a67;
+  outline-offset: 2px;
+  transform: scale(1.12);
+  transform-origin: bottom center;
 }
 
 .marker-cheap {
@@ -127,12 +159,43 @@ select {
   border-radius: 999px;
   box-shadow: 0 10px 24px rgb(23 33 28 / 0.22);
   color: #fff;
+  cursor: pointer;
   display: flex;
+  flex-direction: column;
+  height: 48px;
+  justify-content: center;
+  line-height: 1;
+  width: 72px;
+}
+
+.station-cluster__count {
   font-size: 14px;
   font-weight: 900;
-  height: 44px;
-  justify-content: center;
-  min-width: 44px;
+}
+
+/* Prezzo migliore del gruppo, colorato come i marker (verde = sotto il prezzo tipico). */
+.station-cluster__price {
+  border-radius: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  margin-top: 2px;
+  padding: 1px 4px;
+}
+
+.station-cluster--cheap .station-cluster__price {
+  background: #dff6ea;
+  color: #137348;
+}
+
+.station-cluster--average .station-cluster__price {
+  background: #fff2c2;
+  color: #9a6500;
+}
+
+.station-cluster--high .station-cluster__price {
+  background: #ffe0dd;
+  color: #a22b27;
 }
 
 .brand-logo {
@@ -269,6 +332,11 @@ select {
 }
 
 @media (max-width: 767px) and (orientation: portrait) {
+  /* Stessa altezza della mappa: niente fascia vuota tra mappa e lista. */
+  .map-experience__canvas {
+    min-height: 54dvh;
+  }
+
   .map-experience__leaflet {
     height: 54dvh;
     min-height: 360px;

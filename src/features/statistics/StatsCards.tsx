@@ -2,6 +2,7 @@ import { Gauge, TrendingDown, TrendingUp, Warehouse } from "lucide-react";
 import { intlLocale, type Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
 import { formatEuro } from "@/lib/price";
+import { typicalPrice } from "@/lib/statistics";
 import type { CityFuelStatistic } from "@/types/statistics";
 
 interface StatsCardsProps {
@@ -16,7 +17,7 @@ export function StatsCards({ statistic, compact = false, locale = "it" }: StatsC
   const t = getMessages(locale);
   const intl = intlLocale(locale);
   const items = [
-    { label: t.stats.average, value: formatEuro(statistic.averagePrice, intl), icon: Gauge },
+    { label: t.stats.average, value: formatEuro(typicalPrice(statistic), intl), icon: Gauge },
     { label: t.stats.minimum, value: formatEuro(statistic.minimumPrice, intl), icon: TrendingDown },
     { label: t.stats.maximum, value: formatEuro(statistic.maximumPrice, intl), icon: TrendingUp },
     { label: t.stats.stations, value: String(statistic.stationCount), icon: Warehouse }

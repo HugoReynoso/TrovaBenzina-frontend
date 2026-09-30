@@ -11,7 +11,7 @@ export function Footer({ locale = "it" }: FooterProps) {
 
   return (
     <footer className="mt-auto border-t border-ink/10 bg-white">
-      <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 text-sm text-ink/70 md:grid-cols-[1fr_auto] md:px-6">
+      <div className="mx-auto grid max-w-[1600px] gap-4 px-4 py-8 text-sm text-ink/70 md:grid-cols-[1fr_auto] md:px-6">
         <div>
           <p className="font-black text-ink">
             <span>Trova</span>

@@ -14,10 +14,9 @@ export interface Messages {
   /** Nome del carburante dentro una frase (es. "benzina", "petrol", "gasolina"). */
   fuelInSentence: Record<FuelTypeCode, string>;
   serviceMode: Record<ServiceMode, string>;
-  serviceModeShort: Record<ServiceMode, string>;
   /** Tipo di rifornimento nella scheda del distributore. */
   priceMode: { self: string; served: string };
-  filters: { province: string; fuel: string; mode: string; find: string; quick: string; filterTitle: string };
+  filters: { province: string; fuel: string; mode: string; quick: string; filterTitle: string };
   location: {
     useMyLocation: string;
     locating: string;
@@ -38,8 +37,8 @@ export interface Messages {
     pricesUpdatedAt: (date: string) => string;
     noStations: string;
     removeFilters: string;
-    rankingNear: string;
-    rankingProvince: (province: string) => string;
+    rankingNear: (count: number) => string;
+    rankingProvince: (province: string, count: number) => string;
     rankingSubtitle: string;
     reportPrice: string;
     loadingTitle: string;
@@ -71,8 +70,11 @@ export interface Messages {
     chooseFuel: string;
     chooseProvince: string;
     chooseMode: string;
-    findStations: string;
-    road: string;
+    clusterFrom: (price: string) => string;
+    bestBadge: string;
+    touchHint: string;
+    wheelHint: string;
+    showMore: (count: number) => string;
     routeAria: (name: string) => string;
     routeTitle: string;
     updatedOn: (date: string) => string;
@@ -93,9 +95,8 @@ const it: Messages = {
   fuelName: { BENZINA: "Benzina", DIESEL: "Diesel", GPL: "GPL", METANO: "Metano" },
   fuelInSentence: { BENZINA: "benzina", DIESEL: "diesel", GPL: "GPL", METANO: "metano" },
   serviceMode: { self: "Self service", served: "Servito", all: "Miglior prezzo" },
-  serviceModeShort: { self: "Self", served: "Servito", all: "Miglior prezzo" },
   priceMode: { self: "self", served: "servito" },
-  filters: { province: "Provincia", fuel: "Carburante", mode: "Modalità", find: "Trova", quick: "Veloci", filterTitle: "Filtra prezzi e distributori" },
+  filters: { province: "Provincia", fuel: "Carburante", mode: "Modalità", quick: "Veloci", filterTitle: "Filtra prezzi e distributori" },
   location: {
     useMyLocation: "Usa la mia posizione",
     locating: "Cerco...",
@@ -116,8 +117,8 @@ const it: Messages = {
     pricesUpdatedAt: (date) => `Prezzi aggiornati al ${date}`,
     noStations: "Nessun distributore trovato con questi filtri.",
     removeFilters: "Rimuovi filtri",
-    rankingNear: "Top 5 più economici intorno a te",
-    rankingProvince: (province) => `Top 5 più economici in provincia di ${province}`,
+    rankingNear: (count) => `Top ${count} più economici intorno a te`,
+    rankingProvince: (province, count) => `Top ${count} più economici in provincia di ${province}`,
     rankingSubtitle: "Prezzi ordinati dal più conveniente",
     reportPrice: "Segnala un prezzo",
     loadingTitle: "Caricamento prezzi...",
@@ -133,11 +134,11 @@ const it: Messages = {
     showOnMap: "Mostra sulla mappa",
     directions: "Naviga"
   },
-  stats: { title: "Prezzi in sintesi", average: "Prezzo medio", minimum: "Minimo", maximum: "Massimo", stations: "Distributori" },
+  stats: { title: "Prezzi in sintesi", average: "Prezzo tipico", minimum: "Minimo", maximum: "Massimo", stations: "Distributori" },
   citySummary: {
     title: (area) => `Prezzi carburante in provincia di ${area}`,
     text: (area, average, minimum, maximum, count) =>
-      `Nell'area di ${area}, il prezzo medio rilevato è ${average}. Il minimo è ${minimum}, il massimo è ${maximum} su ${count} distributori nel dataset corrente.`,
+      `Nell'area di ${area} il prezzo tipico (mediana) è ${average}. Il minimo è ${minimum}, il massimo è ${maximum}, su ${count} distributori con prezzo aggiornato.`,
     note: "I dati vengono aggiornati da TrovaBenzina in base alle rilevazioni disponibili."
   },
   map: {
@@ -145,13 +146,16 @@ const it: Messages = {
     listNear: "Distributori vicino a te",
     listProvince: (province) => `Distributori in provincia di ${province}`,
     stationsBadge: (count) => `Distributori (${count})`,
-    savings: (amount) => `Risparmio: ${amount} su un pieno di 50L`,
+    savings: (amount) => `Risparmi fino a ${amount} su un pieno di 50 L rispetto al prezzo tipico`,
     emptyList: "Nessun distributore con prezzo aggiornato negli ultimi 4 giorni con questi filtri.",
     chooseFuel: "Scegli carburante",
     chooseProvince: "Scegli provincia",
     chooseMode: "Scegli modalità prezzo",
-    findStations: "Trova distributori",
-    road: "Stradale",
+    clusterFrom: (price) => `da ${price}`,
+    bestBadge: "Più economico",
+    touchHint: "Tocca la mappa per spostarla",
+    wheelHint: "Clicca sulla mappa per usare lo zoom con la rotella",
+    showMore: (count) => `Mostra altri ${count}`,
     routeAria: (name) => `Avvia il percorso per ${name} su Google Maps`,
     routeTitle: "Apri il percorso su Google Maps",
     updatedOn: (date) => `Aggiornato: ${date}`,
@@ -180,9 +184,8 @@ const en: Messages = {
   fuelName: { BENZINA: "Petrol", DIESEL: "Diesel", GPL: "LPG", METANO: "CNG" },
   fuelInSentence: { BENZINA: "petrol", DIESEL: "diesel", GPL: "LPG", METANO: "CNG" },
   serviceMode: { self: "Self-service", served: "Full service", all: "Best price" },
-  serviceModeShort: { self: "Self", served: "Full service", all: "Best price" },
   priceMode: { self: "self-service", served: "full service" },
-  filters: { province: "Province", fuel: "Fuel", mode: "Service", find: "Search", quick: "Quick", filterTitle: "Filter prices and stations" },
+  filters: { province: "Province", fuel: "Fuel", mode: "Service", quick: "Quick", filterTitle: "Filter prices and stations" },
   location: {
     useMyLocation: "Use my location",
     locating: "Locating...",
@@ -203,8 +206,8 @@ const en: Messages = {
     pricesUpdatedAt: (date) => `Prices updated on ${date}`,
     noStations: "No stations found with these filters.",
     removeFilters: "Reset filters",
-    rankingNear: "Top 5 cheapest near you",
-    rankingProvince: (province) => `Top 5 cheapest in the province of ${province}`,
+    rankingNear: (count) => `Top ${count} cheapest near you`,
+    rankingProvince: (province, count) => `Top ${count} cheapest in the province of ${province}`,
     rankingSubtitle: "Prices sorted from cheapest",
     reportPrice: "Report a price",
     loadingTitle: "Loading prices...",
@@ -220,11 +223,11 @@ const en: Messages = {
     showOnMap: "Show on map",
     directions: "Directions"
   },
-  stats: { title: "Price summary", average: "Average price", minimum: "Lowest", maximum: "Highest", stations: "Stations" },
+  stats: { title: "Price summary", average: "Typical price", minimum: "Lowest", maximum: "Highest", stations: "Stations" },
   citySummary: {
     title: (area) => `Fuel prices in the province of ${area}`,
     text: (area, average, minimum, maximum, count) =>
-      `In the ${area} area the average price is ${average}. The lowest is ${minimum} and the highest is ${maximum}, across ${count} fuel stations in the current data.`,
+      `In the ${area} area the typical (median) price is ${average}. The lowest is ${minimum} and the highest is ${maximum}, across ${count} fuel stations with up-to-date prices.`,
     note: "Prices come from the official data published by the Italian Ministry of Enterprises (MIMIT)."
   },
   map: {
@@ -232,13 +235,16 @@ const en: Messages = {
     listNear: "Fuel stations near you",
     listProvince: (province) => `Fuel stations in the province of ${province}`,
     stationsBadge: (count) => `Stations (${count})`,
-    savings: (amount) => `Save ${amount} on a 50 L fill-up`,
+    savings: (amount) => `Save up to ${amount} on a 50 L fill-up compared with the typical price`,
     emptyList: "No stations with prices updated in the last 4 days for these filters.",
     chooseFuel: "Choose fuel",
     chooseProvince: "Choose province",
     chooseMode: "Choose service type",
-    findStations: "Find stations",
-    road: "Road",
+    clusterFrom: (price) => `from ${price}`,
+    bestBadge: "Cheapest",
+    touchHint: "Tap the map to move it",
+    wheelHint: "Click the map to zoom with the scroll wheel",
+    showMore: (count) => `Show ${count} more`,
     routeAria: (name) => `Get directions to ${name} on Google Maps`,
     routeTitle: "Open directions in Google Maps",
     updatedOn: (date) => `Updated: ${date}`,
@@ -267,9 +273,8 @@ const es: Messages = {
   fuelName: { BENZINA: "Gasolina", DIESEL: "Diésel", GPL: "GLP", METANO: "GNC" },
   fuelInSentence: { BENZINA: "gasolina", DIESEL: "diésel", GPL: "GLP", METANO: "GNC" },
   serviceMode: { self: "Autoservicio", served: "Atendido", all: "Mejor precio" },
-  serviceModeShort: { self: "Autoservicio", served: "Atendido", all: "Mejor precio" },
   priceMode: { self: "autoservicio", served: "atendido" },
-  filters: { province: "Provincia", fuel: "Combustible", mode: "Modalidad", find: "Buscar", quick: "Rápido", filterTitle: "Filtra precios y gasolineras" },
+  filters: { province: "Provincia", fuel: "Combustible", mode: "Modalidad", quick: "Rápido", filterTitle: "Filtra precios y gasolineras" },
   location: {
     useMyLocation: "Usar mi ubicación",
     locating: "Buscando...",
@@ -290,8 +295,8 @@ const es: Messages = {
     pricesUpdatedAt: (date) => `Precios actualizados el ${date}`,
     noStations: "No se han encontrado gasolineras con estos filtros.",
     removeFilters: "Quitar filtros",
-    rankingNear: "Top 5 más baratas cerca de ti",
-    rankingProvince: (province) => `Top 5 más baratas en la provincia de ${province}`,
+    rankingNear: (count) => `Top ${count} más baratas cerca de ti`,
+    rankingProvince: (province, count) => `Top ${count} más baratas en la provincia de ${province}`,
     rankingSubtitle: "Precios ordenados de más barato a más caro",
     reportPrice: "Avisar de un precio",
     loadingTitle: "Cargando precios...",
@@ -307,11 +312,11 @@ const es: Messages = {
     showOnMap: "Ver en el mapa",
     directions: "Cómo llegar"
   },
-  stats: { title: "Resumen de precios", average: "Precio medio", minimum: "Mínimo", maximum: "Máximo", stations: "Gasolineras" },
+  stats: { title: "Resumen de precios", average: "Precio típico", minimum: "Mínimo", maximum: "Máximo", stations: "Gasolineras" },
   citySummary: {
     title: (area) => `Precios del combustible en la provincia de ${area}`,
     text: (area, average, minimum, maximum, count) =>
-      `En la zona de ${area} el precio medio es ${average}. El mínimo es ${minimum} y el máximo ${maximum}, en ${count} gasolineras de los datos actuales.`,
+      `En la zona de ${area} el precio típico (mediana) es ${average}. El mínimo es ${minimum} y el máximo ${maximum}, en ${count} gasolineras con precio actualizado.`,
     note: "Los precios proceden de los datos oficiales publicados por el Ministerio de Empresas italiano (MIMIT)."
   },
   map: {
@@ -319,13 +324,16 @@ const es: Messages = {
     listNear: "Gasolineras cerca de ti",
     listProvince: (province) => `Gasolineras en la provincia de ${province}`,
     stationsBadge: (count) => `Gasolineras (${count})`,
-    savings: (amount) => `Ahorro: ${amount} en un depósito de 50 L`,
+    savings: (amount) => `Ahorra hasta ${amount} en un depósito de 50 L respecto al precio típico`,
     emptyList: "No hay gasolineras con precios actualizados en los últimos 4 días con estos filtros.",
     chooseFuel: "Elegir combustible",
     chooseProvince: "Elegir provincia",
     chooseMode: "Elegir modalidad",
-    findStations: "Buscar gasolineras",
-    road: "Carretera",
+    clusterFrom: (price) => `desde ${price}`,
+    bestBadge: "Más barata",
+    touchHint: "Toca el mapa para moverlo",
+    wheelHint: "Haz clic en el mapa para hacer zoom con la rueda",
+    showMore: (count) => `Mostrar ${count} más`,
     routeAria: (name) => `Cómo llegar a ${name} con Google Maps`,
     routeTitle: "Abrir la ruta en Google Maps",
     updatedOn: (date) => `Actualizado: ${date}`,

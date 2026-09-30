@@ -12,6 +12,11 @@ export function formatEuro(value: number, intl = "it-IT"): string {
   }).format(value);
 }
 
+/** Prezzo al litro senza simbolo di valuta (es. "1,839"), per spazi stretti come i marker sulla mappa. */
+export function formatPrice(value: number, intl = "it-IT"): string {
+  return new Intl.NumberFormat(intl, { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(value);
+}
+
 export function getStationPrice(
   station: Station,
   fuelType: FuelTypeCode,
