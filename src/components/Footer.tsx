@@ -31,9 +31,9 @@ export function Footer({ locale = "it" }: FooterProps) {
             <Link className="hover:text-petrol hover:underline" href="/cookie-policy">
               {t.footer.cookie}
             </Link>
-            <a className="hover:text-petrol hover:underline" href="https://hugoreynoso.github.io/progetti/" target="_blank" rel="noreferrer">
+            <Link className="hover:text-petrol hover:underline" href="/chi-siamo">
               {t.footer.contact}
-            </a>
+            </Link>
           </nav>
           <nav aria-label={t.chooseLanguage} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:justify-end">
             {SUPPORTED_LOCALES.map((item) => (

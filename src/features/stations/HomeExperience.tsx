@@ -15,7 +15,7 @@ import { FuelComposition } from "@/features/statistics/FuelComposition";
 import { StatsCards } from "@/features/statistics/StatsCards";
 import { NewsPreview } from "@/features/news/NewsPreview";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
-import { locateUser } from "@/lib/geolocation";
+import { distanceKm, locateUser } from "@/lib/geolocation";
 import { intlLocale, type Locale } from "@/lib/i18n";
 import { useUrlFilters } from "@/lib/useUrlFilters";
 import { getMessages } from "@/lib/messages";
@@ -51,21 +51,8 @@ interface UserPosition {
   longitude: number;
 }
 
-const quickProvinceNames = ["Milano", "Roma", "Napoli", "Firenze", "Bologna"];
-
-function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }): number {
-  const earthRadiusKm = 6371;
-  const degreesToRadians = Math.PI / 180;
-  const deltaLatitude = (to.latitude - from.latitude) * degreesToRadians;
-  const deltaLongitude = (to.longitude - from.longitude) * degreesToRadians;
-  const fromLatitude = from.latitude * degreesToRadians;
-  const toLatitude = to.latitude * degreesToRadians;
-  const haversine =
-    Math.sin(deltaLatitude / 2) ** 2 +
-    Math.cos(fromLatitude) * Math.cos(toLatitude) * Math.sin(deltaLongitude / 2) ** 2;
-
-  return 2 * earthRadiusKm * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
-}
+// Le prime 3 sempre, le altre solo quando c'e' spazio (xl: Firenze e Bologna, 2xl: Torino e Palermo).
+const quickProvinceNames = ["Milano", "Roma", "Napoli", "Firenze", "Bologna", "Torino", "Palermo"];
 
 function findProvinceCenter(cities: City[], province: Province, fallbackCity: City): City {
   return (
@@ -437,7 +424,11 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                     key={province.id}
                     type="button"
                     className={`h-11 rounded-md border px-3 text-sm font-black shadow-sm transition ${
-                      index >= 3 ? "hidden xl:inline-flex xl:items-center" : "inline-flex items-center"
+                      index >= 5
+                        ? "hidden 2xl:inline-flex 2xl:items-center"
+                        : index >= 3
+                          ? "hidden xl:inline-flex xl:items-center"
+                          : "inline-flex items-center"
                     } ${
                       selectedProvince.id === province.id && !isUsingUserPosition
                         ? "border-petrol bg-petrol text-white"
@@ -481,6 +472,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
                   cityName={selectedCity.name}
                   title={rankingTitle}
                   onSelectStation={handleSelectStation}
+                  userPosition={userPosition}
                   showHeader={false}
                   locale={locale}
                 />
@@ -536,6 +528,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             cityName={selectedCity.name}
             title={rankingTitle}
             onSelectStation={handleSelectStation}
+            userPosition={userPosition}
             locale={locale}
           />
         </aside>

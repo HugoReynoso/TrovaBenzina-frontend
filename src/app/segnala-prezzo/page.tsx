@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { PriceReportForm } from "@/features/reports/PriceReportForm";
 import { getCities } from "@/lib/api/cities";
 import { getStations } from "@/lib/api/stations";
+import { toClientStations } from "@/lib/client-data";
 
 export const metadata: Metadata = {
   title: "Segnala Prezzo Benzinaio",
@@ -21,7 +22,11 @@ export default async function ReportPricePage() {
     <>
       <Header />
       <main className="mx-auto grid max-w-4xl gap-5 px-4 py-6 md:px-6">
-        <PriceReportForm cities={cities} initialCity={initialCity} stations={stations} />
+        <PriceReportForm
+          cities={cities.map(({ id, name, provinceId, provinceName }) => ({ id, name, provinceId, provinceName }))}
+          initialCity={initialCity}
+          stations={toClientStations(stations)}
+        />
       </main>
       <Footer />
     </>

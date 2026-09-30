@@ -10,6 +10,7 @@ import { DynamicStationMap } from "@/features/map/DynamicStationMap";
 import type { LocationStatus, StationFocusRequest } from "@/features/map/StationMap";
 import { getCityFuelStatistics } from "@/lib/api/statistics";
 import { getNearbyStations, getStations } from "@/lib/api/stations";
+import { distanceKm } from "@/lib/geolocation";
 import { filterReliableStations, formatLatestUpdate, formatPrice, getStationPrice, latestCommunicationTime, sortStationsByPrice } from "@/lib/price";
 import { intlLocale, type Locale } from "@/lib/i18n";
 import { useUrlFilters } from "@/lib/useUrlFilters";
@@ -42,20 +43,6 @@ interface LoadedMapData {
 
 /** Schede mostrate nella lista prima di "Mostra altri": centinaia di schede rallentano la pagina. */
 const LIST_PAGE_SIZE = 50;
-
-function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }): number {
-  const earthRadiusKm = 6371;
-  const degreesToRadians = Math.PI / 180;
-  const deltaLatitude = (to.latitude - from.latitude) * degreesToRadians;
-  const deltaLongitude = (to.longitude - from.longitude) * degreesToRadians;
-  const fromLatitude = from.latitude * degreesToRadians;
-  const toLatitude = to.latitude * degreesToRadians;
-  const haversine =
-    Math.sin(deltaLatitude / 2) ** 2 +
-    Math.cos(fromLatitude) * Math.cos(toLatitude) * Math.sin(deltaLongitude / 2) ** 2;
-
-  return 2 * earthRadiusKm * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
-}
 
 function findProvinceCenter(cities: City[], province: Province, fallbackCity: City): City {
   return (
@@ -105,7 +92,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
     [cities, initialCity, selectedProvince]
   );
   const isUsingUserPosition = Boolean(userPosition) && !userSelectedProvinceRef.current;
-  const listTitle = isUsingUserPosition ? t.map.listNear : t.map.listProvince(selectedProvince.name);
+  const listTitle = isUsingUserPosition ? t.map.listNear(fuelType) : t.map.listProvince(fuelType, selectedProvince.name);
 
   const [focusRequest, setFocusRequest] = useState<StationFocusRequest | null>(null);
   const mapCanvasRef = useRef<HTMLDivElement>(null);
@@ -462,6 +449,7 @@ export function MapExperience({ cities, provinces, initialCity, initialProvince,
         {locationError ? <p className="m-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{locationError}</p> : null}
         {error ? <p className="m-3 rounded-md bg-tomato/10 p-3 text-sm font-bold text-tomato">{error}</p> : null}
 
+        <h2 className="sr-only">{t.map.listHeading}</h2>
         <ol
           ref={stationListRef}
           aria-labelledby="map-results-title"

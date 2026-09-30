@@ -210,7 +210,7 @@ export const mockNews: NewsArticle[] = [
       "## Le voci del prezzo",
       "Il prezzo alla pompa si può dividere in quattro parti: il costo del prodotto raffinato, legato alle quotazioni internazionali; i costi di trasporto, stoccaggio e distribuzione; il margine di compagnie e gestori; le imposte, cioè accise e IVA.",
       "## Le accise",
-      "L'accisa è un'imposta fissa per litro stabilita dallo Stato, diversa per benzina, gasolio e GPL. Essendo un importo fisso, non cambia quando cambia il prezzo del petrolio: per questo, quando le quotazioni scendono, il prezzo alla pompa cala in proporzione meno di quanto ci si aspetterebbe.",
+      "L'accisa è un'imposta fissa per litro stabilita dallo Stato: dal 1° gennaio 2026 è la stessa per benzina e gasolio (0,6729 € al litro, salvo tagli temporanei) ed è molto più bassa per GPL e metano. Essendo un importo fisso, non cambia quando cambia il prezzo del petrolio: per questo, quando le quotazioni scendono, il prezzo alla pompa cala in proporzione meno di quanto ci si aspetterebbe.",
       "## L'IVA",
       "Sul carburante si applica l'IVA ordinaria del 22%. L'IVA si calcola sul prezzo che comprende già l'accisa: di fatto, si paga l'IVA anche sull'accisa.",
       "## Perché il peso delle tasse è così alto",

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import Link from "next/link";
+import { founder } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -32,7 +34,17 @@ export default function PrivacyPage() {
         </section>
         <section className="grid gap-2">
           <h2 className="text-xl font-black text-ink">Contatti</h2>
-          <p>Pagina contatti futura. Prima della produzione andra completata con titolare, email e dettagli legali.</p>
+          <p>
+            Per domande sui dati o per chiederne la cancellazione scrivi a{" "}
+            <a className="font-black text-petrol hover:underline" href={`mailto:${founder.email}`}>
+              {founder.email}
+            </a>
+            . Altre informazioni nella pagina{" "}
+            <Link className="font-black text-petrol hover:underline" href="/chi-siamo">
+              Chi siamo e contatti
+            </Link>
+            .
+          </p>
         </section>
       </main>
       <Footer />

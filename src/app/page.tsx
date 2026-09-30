@@ -9,16 +9,26 @@ import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { homeAlternates } from "@/lib/i18n";
 import { provinceCenterCities, toClientStations } from "@/lib/client-data";
+import { defaultOgImage, siteName } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: { absolute: "TrovaBenzina | Prezzo benzina oggi e distributori più economici" },
+  // Parola chiave prima del marchio: e' la parte che Google mostra e che chi cerca legge per prima.
+  title: { absolute: "Prezzo benzina oggi e distributori più economici | TrovaBenzina" },
   description:
     "Trova Benzina: confronta il prezzo di benzina, diesel e GPL oggi, trova il distributore più economico vicino a te sulla mappa e controlla la data dell'ultimo prezzo comunicato al MIMIT.",
   alternates: { canonical: "/", languages: homeAlternates() },
   openGraph: {
-    title: "TrovaBenzina | Prezzo benzina oggi e distributori più economici",
+    title: "Prezzo benzina oggi e distributori più economici | TrovaBenzina",
     description: "Trova Benzina: mappa dei distributori con prezzi di benzina, diesel e GPL, filtri per provincia e modalità self o servito.",
-    url: "/"
+    url: "/",
+    type: "website",
+    locale: "it_IT",
+    images: [{ url: defaultOgImage, width: 1200, height: 630, alt: `${siteName} - prezzi carburante in Italia` }]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Prezzo benzina oggi e distributori più economici | TrovaBenzina",
+    images: [defaultOgImage]
   }
 };
 

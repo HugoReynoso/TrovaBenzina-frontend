@@ -7,11 +7,14 @@ import { getStations } from "@/lib/api/stations";
 import type { FuelTypeCode } from "@/types/fuel";
 import { FUEL_TYPES } from "@/types/fuel";
 import type { City } from "@/types/location";
+
+/** Solo i campi usati dal form: la pagina riceve ~8.000 comuni e ogni campo in piu' pesa. */
+export type ReportCity = Pick<City, "id" | "name" | "provinceId" | "provinceName">;
 import type { Station } from "@/types/station";
 
 interface PriceReportFormProps {
-  cities: City[];
-  initialCity?: City;
+  cities: ReportCity[];
+  initialCity?: ReportCity;
   stations: Station[];
   initialStationId?: number;
   initialFuelType?: FuelTypeCode;

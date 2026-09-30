@@ -7,6 +7,16 @@ export const siteName = "TrovaBenzina";
 export const siteUrl = "https://www.trovabenzina.it";
 export const defaultOgImage = "/brand/trovabenzina-concept.png";
 
+/** Autore del progetto: pagina Chi siamo e dati strutturati (chi c'e' dietro il sito conta per Google). */
+export const founder = {
+  name: "Hugo Aldo Reynoso",
+  jobTitle: "Senior Full-Stack Developer",
+  email: "HugoAldoReynoso@gmail.com",
+  linkedin: "https://www.linkedin.com/in/hugo-aldo-reynoso/",
+  github: "https://github.com/HugoReynoso",
+  website: "https://hugoreynoso.github.io/"
+};
+
 export const fuelSeo: Record<
   FuelTypeCode,
   { label: string; titleLabel: string; serviceMode: ServiceMode; routePrefix: string }
@@ -38,8 +48,10 @@ export const fuelSeo: Record<
   }
 };
 
+/** Indirizzo assoluto di una pagina, con "/" finale come i canonical (il sito usa trailingSlash). */
 export function absoluteUrl(path: string): string {
-  return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
+  const withLeadingSlash = path.startsWith("/") ? path : `/${path}`;
+  return `${siteUrl}${withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`}`;
 }
 
 export function cityFuelPath(fuelType: FuelTypeCode, citySlug: string): string {

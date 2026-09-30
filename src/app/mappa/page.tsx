@@ -6,18 +6,26 @@ import { getProvinces } from "@/lib/api/provinces";
 import { getStations } from "@/lib/api/stations";
 import { buildCityFuelStatistic } from "@/lib/statistics";
 import { mapAlternates } from "@/lib/i18n";
+import { defaultOgImage, siteName } from "@/lib/seo";
 import { provinceCenterCities, toClientStations } from "@/lib/client-data";
 
 export const metadata: Metadata = {
-  title: "Mappa distributori carburante",
+  title: "Mappa distributori benzina e prezzi oggi",
   description:
-    "Consulta la mappa distributori TrovaBenzina con filtri per provincia, carburante e modalità prezzo. Lista completa ordinata dal prezzo più economico.",
+    "Mappa dei distributori di benzina, diesel, GPL e metano con i prezzi di oggi: filtra per provincia, marchio e self o servito e trova il più economico vicino a te.",
   alternates: { canonical: "/mappa", languages: mapAlternates() },
   openGraph: {
-    title: "Mappa distributori carburante | TrovaBenzina",
-    description: "Mappa carburanti con filtri e lista completa dei distributori ordinati per prezzo.",
+    title: `Mappa distributori benzina e prezzi oggi | ${siteName}`,
+    description: "Mappa dei distributori con i prezzi di oggi, filtri per provincia e marchio e lista ordinata dal più economico.",
     url: "/mappa",
-    type: "website"
+    type: "website",
+    locale: "it_IT",
+    images: [{ url: defaultOgImage, width: 1200, height: 630, alt: `${siteName} - mappa distributori carburante` }]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Mappa distributori benzina e prezzi oggi | ${siteName}`,
+    images: [defaultOgImage]
   }
 };
 

@@ -27,6 +27,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `Storico Prezzo Benzina ${city.name}`,
     description: `Consulta lo storico del prezzo benzina a ${city.name}, con media, minimo e massimo quando disponibili.`,
     alternates: { canonical: `/storico-prezzo-benzina/${city.slug}` },
+    // Fuori dall'indice finche' lo storico non ha dati sufficienti e un testo nell'HTML:
+    // 110 pagine quasi vuote abbasserebbero la qualita' percepita dell'intero sito.
+    robots: { index: false, follow: true },
     openGraph: {
       title: `Storico Prezzo Benzina ${city.name} | ${siteName}`,
       description: `Consulta lo storico del prezzo benzina a ${city.name}, con media, minimo e massimo quando disponibili.`,

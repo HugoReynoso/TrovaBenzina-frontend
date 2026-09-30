@@ -3,8 +3,9 @@
 import { Navigation } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { intlLocale, type Locale } from "@/lib/i18n";
+import { distanceKm } from "@/lib/geolocation";
 import { getMessages } from "@/lib/messages";
-import { formatEuro, getStationPrice } from "@/lib/price";
+import { formatPrice, getStationPrice } from "@/lib/price";
 import type { FuelTypeCode, ServiceMode } from "@/types/fuel";
 import type { Station } from "@/types/station";
 
@@ -18,10 +19,22 @@ interface CheapestStationsProps {
   onSelectStation?: (station: Station) => void;
   /** false quando il titolo e' gia' mostrato altrove (es. box a scomparsa su mobile): evita titoli e id duplicati. */
   showHeader?: boolean;
+  /** Posizione dell'utente, se nota: mostra la distanza di ogni distributore. */
+  userPosition?: { latitude: number; longitude: number } | null;
   locale?: Locale;
 }
 
-export function CheapestStations({ stations, fuelType, serviceMode, cityName, title, onSelectStation, showHeader = true, locale = "it" }: CheapestStationsProps) {
+export function CheapestStations({
+  stations,
+  fuelType,
+  serviceMode,
+  cityName,
+  title,
+  onSelectStation,
+  showHeader = true,
+  userPosition,
+  locale = "it"
+}: CheapestStationsProps) {
   const t = getMessages(locale);
   const intl = intlLocale(locale);
   if (stations.length === 0) {
@@ -48,6 +61,8 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
       <ol className={showHeader ? "mt-3 grid gap-2 md:mt-4 md:gap-3" : "grid gap-2"}>
         {stations.map((station, index) => {
           const price = getStationPrice(station, fuelType, serviceMode);
+          // Come nelle schede della mappa: distanza dal server ("vicino a te") o in linea d'aria dalla posizione.
+          const distance = station.distanceKm ?? (userPosition ? distanceKm(userPosition, station) : undefined);
           return (
             <li
               key={station.id}
@@ -78,11 +93,24 @@ export function CheapestStations({ stations, fuelType, serviceMode, cityName, ti
                 {/* Due righe al massimo invece di troncare: nome e indirizzo restano leggibili anche nella colonna laterale. */}
                 <p className="line-clamp-2 break-words text-sm font-black leading-tight text-ink md:text-base">{station.name}</p>
                 <p className="mt-0.5 line-clamp-2 break-words text-xs leading-snug text-ink/62 md:text-sm">
-                  {station.brand} · {station.distanceKm ? `${station.distanceKm.toFixed(1)} km` : station.address}
+                  {station.brand} · {station.address}
                 </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {price ? (
+                    <span className="rounded-md bg-white px-1.5 py-0.5 text-xs font-bold text-ink/62">
+                      {t.map.updatedOn(new Intl.DateTimeFormat(intl, { day: "numeric", month: "short" }).format(new Date(price.communicatedAt)))}
+                    </span>
+                  ) : null}
+                  {distance !== undefined ? (
+                    <span className="rounded-md bg-petrol/10 px-1.5 py-0.5 text-xs font-bold text-petrol">{distance.toFixed(1)} km</span>
+                  ) : null}
+                </div>
               </div>
-              <div className="shrink-0 text-right">
-                <p className="text-sm font-black text-mint md:text-base">{price ? formatEuro(price.price, intl) : "-"}</p>
+              <div className="grid shrink-0 justify-items-end gap-1">
+                <p className="whitespace-nowrap rounded-md bg-mint px-2 py-1 text-base font-black leading-none text-white shadow-sm">
+                  {price ? formatPrice(price.price, intl) : "-"}
+                  <span className="ml-0.5 text-xs">€/L</span>
+                </p>
                 <a
                   className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-bold text-petrol hover:bg-petrol/8 md:px-2"
                   href={`https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`}

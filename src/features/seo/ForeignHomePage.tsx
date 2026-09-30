@@ -29,7 +29,7 @@ const COPY: Record<
   }
 > = {
   en: {
-    metaTitle: "TrovaBenzina | Petrol & Diesel Prices in Italy Today – Cheapest Fuel Stations",
+    metaTitle: "Petrol & Diesel Prices in Italy Today | TrovaBenzina",
     description:
       "Find the cheapest petrol, diesel and LPG in Italy today. Compare fuel station prices on the map, near you or by city, with official data from the Italian Ministry (MIMIT).",
     h1: "Fuel prices in Italy today: find the cheapest petrol station",
@@ -44,7 +44,7 @@ const COPY: Record<
     allCities: "All cities →"
   },
   es: {
-    metaTitle: "TrovaBenzina | Precio de la gasolina en Italia hoy – Gasolineras más baratas",
+    metaTitle: "Precio de la gasolina en Italia hoy | TrovaBenzina",
     description:
       "Encuentra la gasolina, el diésel y el GLP más baratos de Italia hoy. Compara los precios de las gasolineras en el mapa, cerca de ti o por ciudad, con datos oficiales del Ministerio italiano (MIMIT).",
     h1: "Precio del combustible en Italia hoy: encuentra la gasolinera más barata",

@@ -13,12 +13,12 @@ type ForeignLocale = Exclude<Locale, "it">;
 
 const COPY: Record<ForeignLocale, { title: string; description: string }> = {
   en: {
-    title: "Fuel Station Map of Italy: Petrol, Diesel and LPG Prices",
+    title: "Fuel Station Map of Italy with Prices Today",
     description:
       "Map of fuel stations in Italy with today's petrol, diesel and LPG prices. Filter by province, fuel and self-service or full service, and see the cheapest stations first."
   },
   es: {
-    title: "Mapa de gasolineras en Italia: precios de gasolina, diésel y GLP",
+    title: "Mapa de gasolineras en Italia con precios hoy",
     description:
       "Mapa de las gasolineras de Italia con los precios de hoy de la gasolina, el diésel y el GLP. Filtra por provincia, combustible y autoservicio o atendido, y ve primero las más baratas."
   }

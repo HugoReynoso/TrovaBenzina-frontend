@@ -62,8 +62,9 @@ export interface Messages {
   };
   map: {
     loading: string;
-    listNear: string;
-    listProvince: (province: string) => string;
+    listNear: (fuel: FuelTypeCode) => string;
+    listProvince: (fuel: FuelTypeCode, province: string) => string;
+    listHeading: string;
     stationsBadge: (count: number) => string;
     savings: (amount: string) => string;
     emptyList: string;
@@ -148,8 +149,9 @@ const it: Messages = {
   },
   map: {
     loading: "Carico la mappa...",
-    listNear: "Distributori vicino a te",
-    listProvince: (province) => `Distributori in provincia di ${province}`,
+    listNear: (fuel) => `Mappa distributori ${it.fuelInSentence[fuel]} vicino a te`,
+    listProvince: (fuel, province) => `Mappa distributori ${it.fuelInSentence[fuel]} in provincia di ${province}`,
+    listHeading: "Distributori ordinati dal prezzo più basso",
     stationsBadge: (count) => `Distributori (${count})`,
     savings: (amount) => `Risparmi fino a ${amount} su un pieno di 50 L rispetto al prezzo tipico`,
     emptyList: "Nessun distributore con prezzo aggiornato negli ultimi 4 giorni con questi filtri.",
@@ -178,7 +180,7 @@ const it: Messages = {
     pricesByCity: "Prezzi per città",
     privacy: "Privacy",
     cookie: "Cookie",
-    contact: "Contatti futuri",
+    contact: "Chi siamo e contatti",
     linksLabel: "Link footer"
   }
 };
@@ -242,8 +244,9 @@ const en: Messages = {
   },
   map: {
     loading: "Loading map...",
-    listNear: "Fuel stations near you",
-    listProvince: (province) => `Fuel stations in the province of ${province}`,
+    listNear: (fuel) => `Map of ${en.fuelInSentence[fuel]} stations near you`,
+    listProvince: (fuel, province) => `Map of ${en.fuelInSentence[fuel]} stations in the province of ${province}`,
+    listHeading: "Fuel stations sorted from the cheapest",
     stationsBadge: (count) => `Stations (${count})`,
     savings: (amount) => `Save up to ${amount} on a 50 L fill-up compared with the typical price`,
     emptyList: "No stations with prices updated in the last 4 days for these filters.",
@@ -272,7 +275,7 @@ const en: Messages = {
     pricesByCity: "Prices by city",
     privacy: "Privacy (IT)",
     cookie: "Cookies (IT)",
-    contact: "Contact",
+    contact: "About & contact (IT)",
     linksLabel: "Footer links"
   }
 };
@@ -336,8 +339,9 @@ const es: Messages = {
   },
   map: {
     loading: "Cargando el mapa...",
-    listNear: "Gasolineras cerca de ti",
-    listProvince: (province) => `Gasolineras en la provincia de ${province}`,
+    listNear: (fuel) => `Mapa de gasolineras (${es.fuelInSentence[fuel]}) cerca de ti`,
+    listProvince: (fuel, province) => `Mapa de gasolineras (${es.fuelInSentence[fuel]}) en la provincia de ${province}`,
+    listHeading: "Gasolineras ordenadas de más barata a más cara",
     stationsBadge: (count) => `Gasolineras (${count})`,
     savings: (amount) => `Ahorra hasta ${amount} en un depósito de 50 L respecto al precio típico`,
     emptyList: "No hay gasolineras con precios actualizados en los últimos 4 días con estos filtros.",
@@ -366,7 +370,7 @@ const es: Messages = {
     pricesByCity: "Precios por ciudad",
     privacy: "Privacidad (IT)",
     cookie: "Cookies (IT)",
-    contact: "Contacto",
+    contact: "Quiénes somos y contacto (IT)",
     linksLabel: "Enlaces del pie de página"
   }
 };

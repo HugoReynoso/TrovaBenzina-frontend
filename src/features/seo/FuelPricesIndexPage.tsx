@@ -15,12 +15,13 @@ import {
 import { getMessages } from "@/lib/messages";
 import { breadcrumbJsonLd, defaultOgImage, siteName } from "@/lib/seo";
 import { getSeoCities, groupCitiesByRegion } from "@/lib/seo-cities";
+import { BRAND_PAGES, brandPath } from "@/lib/brand-pages";
 
 const COPY: Record<Locale, { home: string; title: string; metaTitle: string; description: string; h1: string; intro: string; cityLink: (city: string) => string }> = {
   it: {
     home: "Home",
     title: "Prezzi carburanti per città",
-    metaTitle: "Prezzi carburanti per città: benzina, diesel, GPL e metano in tutti i capoluoghi",
+    metaTitle: "Prezzi carburanti oggi nei capoluoghi italiani",
     description:
       "Elenco dei capoluoghi di provincia italiani divisi per regione: confronta il prezzo di benzina, diesel, GPL e metano oggi e trova i distributori più economici della tua città.",
     h1: "Prezzi carburanti per città",
@@ -31,7 +32,7 @@ const COPY: Record<Locale, { home: string; title: string; metaTitle: string; des
   en: {
     home: "Home",
     title: "Fuel prices by city",
-    metaTitle: "Fuel Prices in Italy by City: Petrol, Diesel and LPG Today",
+    metaTitle: "Fuel Prices in Italy by City Today",
     description:
       "Petrol, diesel and LPG prices today in Italy's main cities, grouped by region. Find the cheapest fuel stations in Rome, Milan, Florence, Venice, Naples and more.",
     h1: "Fuel prices in Italy by city",
@@ -42,7 +43,7 @@ const COPY: Record<Locale, { home: string; title: string; metaTitle: string; des
   es: {
     home: "Inicio",
     title: "Precios del combustible por ciudad",
-    metaTitle: "Precio de la gasolina en Italia por ciudad: gasolina, diésel y GLP hoy",
+    metaTitle: "Precio del combustible en Italia por ciudad",
     description:
       "Precios de la gasolina, el diésel y el GLP hoy en las principales ciudades de Italia, por regiones. Encuentra las gasolineras más baratas en Roma, Milán, Florencia, Venecia, Nápoles y más.",
     h1: "Precios del combustible en Italia por ciudad",
@@ -98,6 +99,21 @@ export async function FuelPricesIndexPage({ locale }: { locale: Locale }) {
         <header className="grid gap-2 rounded-md border border-ink/10 bg-white p-4 shadow-sm md:p-5">
           <h1 className="text-2xl font-black leading-tight text-ink md:text-4xl">{copy.h1}</h1>
           <p className="max-w-4xl text-ink/70">{copy.intro}</p>
+          {/* Le pagine per marchio esistono solo in italiano. */}
+          {locale === "it" ? (
+            <nav className="mt-2 flex flex-wrap items-center gap-2" aria-label="Prezzi per marchio">
+              <span className="text-xs font-black uppercase tracking-[0.08em] text-ink/60">Per marchio</span>
+              {BRAND_PAGES.map((brand) => (
+                <Link
+                  key={brand.slug}
+                  className="rounded-md border border-petrol/20 px-3 py-1.5 text-sm font-black text-petrol hover:border-petrol/45"
+                  href={brandPath(brand.slug)}
+                >
+                  {brand.name}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
         </header>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {regions.map((region) => (

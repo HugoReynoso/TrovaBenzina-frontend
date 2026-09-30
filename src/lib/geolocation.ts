@@ -114,3 +114,18 @@ export function locateUser({ onSuccess, onFailure, failureAfterMs = 30000, liste
 
   return stop;
 }
+
+/** Distanza in linea d'aria (km) tra due punti. */
+export function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }): number {
+  const earthRadiusKm = 6371;
+  const degreesToRadians = Math.PI / 180;
+  const deltaLatitude = (to.latitude - from.latitude) * degreesToRadians;
+  const deltaLongitude = (to.longitude - from.longitude) * degreesToRadians;
+  const fromLatitude = from.latitude * degreesToRadians;
+  const toLatitude = to.latitude * degreesToRadians;
+  const haversine =
+    Math.sin(deltaLatitude / 2) ** 2 +
+    Math.cos(fromLatitude) * Math.cos(toLatitude) * Math.sin(deltaLongitude / 2) ** 2;
+
+  return 2 * earthRadiusKm * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}

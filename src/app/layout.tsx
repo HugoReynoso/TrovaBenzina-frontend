@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { preconnect } from "react-dom";
 import { RouteLoadingIndicator } from "@/components/RouteLoadingIndicator";
-import { defaultOgImage, siteName, siteUrl } from "@/lib/seo";
+import { defaultOgImage, founder, siteName, siteUrl } from "@/lib/seo";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -75,7 +75,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       name: siteName,
       alternateName: "Trova Benzina",
       url: siteUrl,
-      logo: `${siteUrl}/brand/trovabenzina-logo.svg`
+      logo: `${siteUrl}/brand/trovabenzina-logo.svg`,
+      email: founder.email,
+      founder: { "@type": "Person", name: founder.name, jobTitle: founder.jobTitle, sameAs: [founder.linkedin, founder.github, founder.website] }
     }
   ];
 
