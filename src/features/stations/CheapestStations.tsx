@@ -19,6 +19,8 @@ interface CheapestStationsProps {
   onSelectStation?: (station: Station) => void;
   /** false quando il titolo e' gia' mostrato altrove (es. box a scomparsa su mobile): evita titoli e id duplicati. */
   showHeader?: boolean;
+  /** true quando il contenitore ha un'altezza fissa: la lista scorre al suo interno. */
+  scrollable?: boolean;
   /** Posizione dell'utente, se nota: mostra la distanza di ogni distributore. */
   userPosition?: { latitude: number; longitude: number } | null;
   locale?: Locale;
@@ -32,6 +34,7 @@ export function CheapestStations({
   title,
   onSelectStation,
   showHeader = true,
+  scrollable = false,
   userPosition,
   locale = "it"
 }: CheapestStationsProps) {
@@ -48,7 +51,7 @@ export function CheapestStations({
   return (
     <section
       aria-labelledby={showHeader ? "piu-economici" : undefined}
-      className={showHeader ? "rounded-md border border-ink/10 bg-white p-3 shadow-sm md:p-4" : undefined}
+      className={`${showHeader ? "rounded-md border border-ink/10 bg-white p-3 shadow-sm md:p-4" : ""} ${scrollable ? "flex min-h-0 flex-1 flex-col" : ""}`}
     >
       {showHeader ? (
         <div className="flex items-center justify-between gap-3">
@@ -58,7 +61,11 @@ export function CheapestStations({
           <span className="shrink-0 whitespace-nowrap rounded-md bg-mint/12 px-2 py-1 text-xs font-black text-mint">{t.cheapest.top(stations.length)}</span>
         </div>
       ) : null}
-      <ol className={showHeader ? "mt-3 grid gap-2 md:mt-4 md:gap-3" : "grid gap-2"}>
+      <ol
+        className={`${showHeader ? "mt-3 grid gap-2 md:mt-4 md:gap-3" : "grid gap-2"} ${
+          scrollable ? "ranking-scroll min-h-0 flex-1 auto-rows-min overflow-y-auto overscroll-contain pr-1" : ""
+        }`}
+      >
         {stations.map((station, index) => {
           const price = getStationPrice(station, fuelType, serviceMode);
           // Come nelle schede della mappa: distanza dal server ("vicino a te") o in linea d'aria dalla posizione.

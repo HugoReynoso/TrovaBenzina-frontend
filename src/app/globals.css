@@ -321,6 +321,12 @@ select {
   height: 100%;
 }
 
+/* Classifica della home che scorre dentro la colonna laterale. */
+.ranking-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(23 33 28 / 0.28) transparent;
+}
+
 .map-station-carousel {
   scrollbar-width: thin;
   scrollbar-color: rgb(23 33 28 / 0.28) transparent;

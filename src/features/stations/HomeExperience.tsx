@@ -367,7 +367,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   return (
     <>
       {isLoading ? <DataLoadingOverlay title={t.home.loadingTitle} text={t.home.loadingText} /> : null}
-      <section className="mx-auto grid w-full max-w-[1600px] gap-3 px-3 py-3 md:gap-5 md:px-6 md:py-5 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start 2xl:grid-cols-[minmax(0,1fr)_480px]">
+      <section className="mx-auto grid w-full max-w-[1600px] gap-3 px-3 py-3 md:gap-5 md:px-6 md:py-5 lg:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_480px]">
         <div className="grid min-w-0 gap-3 md:gap-4">
           <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:p-4">
             <div className="flex items-start justify-between gap-3">
@@ -519,9 +519,13 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
           </Link>
         </div>
 
-        <aside className="hidden min-w-0 grid-cols-1 gap-4 lg:grid">
+        {/* La colonna laterale e' alta quanto filtri + mappa: il contenuto e' posizionato in modo assoluto,
+            cosi' non allunga la riga, e la classifica scorre al suo interno invece di superare la mappa. */}
+        <aside className="relative hidden min-w-0 lg:block">
+          <div className="absolute inset-0 flex flex-col gap-4">
           <StatsCards statistic={displayStatistic} compact locale={locale} />
           <CheapestStations
+            scrollable
             stations={cheapest}
             fuelType={fuelType}
             serviceMode={serviceMode}
@@ -531,6 +535,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
             userPosition={userPosition}
             locale={locale}
           />
+          </div>
         </aside>
       </section>
 
