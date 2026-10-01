@@ -339,8 +339,10 @@ export function FuelCitySeo({ city, cities, fuelType, stations, statistic, servi
                         "@type": "Offer",
                         price: price.price.toFixed(3),
                         priceCurrency: "EUR",
-                        validFrom: price.communicatedAt,
-                        itemOffered: { "@type": "Product", name: copy.offerName(t.fuelName[fuelType], price.selfService) }
+                        // Niente "Product" annidato: Google lo valuta come scheda prodotto e segnala
+                        // l'errore "specificare offers, review o aggregateRating".
+                        name: copy.offerName(t.fuelName[fuelType], price.selfService),
+                        validFrom: price.communicatedAt
                       }
                     : undefined
                 }
@@ -354,12 +356,12 @@ export function FuelCitySeo({ city, cities, fuelType, stations, statistic, servi
   const relatedFuelTypes = LOCALIZED_FUELS.filter((item) => item !== fuelType);
   const nearbyCities = relatedCities(city, cities, locale);
   const routes = LOCALE_ROUTES[locale];
+  // Solo voci con un indirizzo: per Google ogni elemento del breadcrumb deve avere "item".
+  // Regione e citta' restano nel percorso visibile, ma non hanno una pagina propria.
   const breadcrumbs = [
     { name: copy.home, path: routes.home },
     { name: copy.fuelPrices, path: routes.fuelIndex },
-    { name: city.regionName },
-    { name: cityName },
-    { name: locale === "it" ? fuel.titleLabel : t.fuelName[fuelType], path: pagePath }
+    { name: `${locale === "it" ? fuel.titleLabel : t.fuelName[fuelType]} ${cityName}`, path: pagePath }
   ];
 
   return (

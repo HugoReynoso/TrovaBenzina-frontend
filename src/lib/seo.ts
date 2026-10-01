@@ -116,7 +116,8 @@ export function buildCityFuelMetadata(city: City, fuelType: LocalizedFuel, local
   };
 }
 
-export function breadcrumbJsonLd(items: Array<{ name: string; path?: string }>) {
+/** Ogni voce deve avere un indirizzo: Google segnala come errore le voci senza "item". */
+export function breadcrumbJsonLd(items: Array<{ name: string; path: string }>) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -124,7 +125,7 @@ export function breadcrumbJsonLd(items: Array<{ name: string; path?: string }>) 
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      ...(item.path ? { item: absoluteUrl(item.path) } : {})
+      item: absoluteUrl(item.path)
     }))
   };
 }
