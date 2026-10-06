@@ -75,6 +75,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
   const [currentStatistic, setCurrentStatistic] = useState(statistic);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [showLocatingOverlay, setShowLocatingOverlay] = useState(false);
   const [locateRequestId, setLocateRequestId] = useState(0);
   const [error, setError] = useState("");
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
@@ -197,7 +198,7 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     setIsLocating(true);
     locateUser({
       onSuccess: (position) => {
-        setIsLocating(false);
+        // isLocating resta attivo: lo spegne il caricamento dei prezzi, cosi' la schermata non sparisce in mezzo.
         setError("");
         handleUserPositionChange(position, true);
       },
@@ -208,8 +209,26 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
     });
   }
 
+  // La schermata "Cerco la tua posizione" resta al massimo 10 secondi: se il GPS e' lento la pagina
+  // torna visibile (il bottone continua a mostrare "Cerco...") invece di restare coperta fino all'errore.
+  useEffect(() => {
+    if (!isLocating) {
+      setShowLocatingOverlay(false);
+      return;
+    }
+    setShowLocatingOverlay(true);
+    const timer = window.setTimeout(() => setShowLocatingOverlay(false), 10000);
+    return () => window.clearTimeout(timer);
+  }, [isLocating]);
+
   function handleLocationStatusChange(status: LocationStatus) {
-    setIsLocating(status === "loading");
+    // Con "ready" non spegniamo isLocating: lo fa il caricamento dei prezzi che parte subito dopo,
+    // altrimenti la schermata di caricamento sparirebbe per un istante tra posizione e prezzi.
+    if (status === "loading") {
+      setIsLocating(true);
+    } else if (status !== "ready") {
+      setIsLocating(false);
+    }
 
     if (status === "ready" || status === "unavailable" || status === "denied") {
       // Richiesta completata: azzera, cosi' se la mappa si rimonta non richiede di nuovo il GPS.
@@ -265,6 +284,10 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
   useEffect(() => {
     const shouldUseUserPosition = isUsingUserPosition;
+    if (shouldUseUserPosition) {
+      // La posizione e' arrivata: da qui la schermata mostra "Caricamento prezzi".
+      setIsLocating(false);
+    }
     // Per provincia arrivano tutti i prezzi: cambiare carburante o modalita' filtra in locale, senza ricaricare.
     const requestKey = shouldUseUserPosition
       ? `nearby:${userPosition?.latitude.toFixed(4)}:${userPosition?.longitude.toFixed(4)}:${fuelType}:${serviceMode}:${searchVersion}`
@@ -366,7 +389,13 @@ export function HomeExperience({ cities, provinces, initialCity, initialProvince
 
   return (
     <>
-      {isLoading ? <DataLoadingOverlay title={t.home.loadingTitle} text={t.home.loadingText} /> : null}
+      {/* Compare subito al clic su "Usa la mia posizione": la prima volta il browser impiega alcuni secondi
+          a calcolare la posizione (permesso, Wi-Fi/GPS), poi si passa al caricamento dei prezzi. */}
+      {isLoading ? (
+        <DataLoadingOverlay title={t.home.loadingTitle} text={t.home.loadingText} />
+      ) : showLocatingOverlay ? (
+        <DataLoadingOverlay title={t.home.locatingTitle} text={t.home.locatingText} />
+      ) : null}
       <section className="mx-auto grid w-full max-w-[1600px] gap-3 px-3 py-3 md:gap-5 md:px-6 md:py-5 lg:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_480px]">
         <div className="grid min-w-0 gap-3 md:gap-4">
           <div className="grid gap-3 rounded-md border border-ink/10 bg-white p-3 shadow-sm md:p-4">

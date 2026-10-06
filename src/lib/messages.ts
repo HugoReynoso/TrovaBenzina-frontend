@@ -43,6 +43,8 @@ export interface Messages {
     reportPrice: string;
     loadingTitle: string;
     loadingText: string;
+    locatingTitle: string;
+    locatingText: string;
     loadStationsError: string;
     loadDataError: string;
     exciseAccordion: string;
@@ -129,6 +131,8 @@ const it: Messages = {
     reportPrice: "Segnala un prezzo",
     loadingTitle: "Caricamento prezzi...",
     loadingText: "Sto aggiornando i prezzi della zona selezionata.",
+    locatingTitle: "Cerco la tua posizione...",
+    locatingText: "Se il browser lo chiede, consenti l'accesso alla posizione.",
     loadStationsError: "Impossibile caricare i distributori.",
     loadDataError: "Impossibile caricare i dati in questo momento.",
     exciseAccordion: "Accise e composizione prezzo"
@@ -224,6 +228,8 @@ const en: Messages = {
     reportPrice: "Report a price",
     loadingTitle: "Loading prices...",
     loadingText: "Updating prices for the selected area.",
+    locatingTitle: "Finding your location...",
+    locatingText: "If your browser asks, allow access to your location.",
     loadStationsError: "Unable to load fuel stations.",
     loadDataError: "Unable to load data right now.",
     exciseAccordion: "Fuel taxes and price breakdown"
@@ -319,6 +325,8 @@ const es: Messages = {
     reportPrice: "Avisar de un precio",
     loadingTitle: "Cargando precios...",
     loadingText: "Actualizando los precios de la zona seleccionada.",
+    locatingTitle: "Buscando tu ubicación...",
+    locatingText: "Si el navegador lo pide, permite el acceso a tu ubicación.",
     loadStationsError: "No se pueden cargar las gasolineras.",
     loadDataError: "No se pueden cargar los datos en este momento.",
     exciseAccordion: "Impuestos y composición del precio"
